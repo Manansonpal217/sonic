@@ -59,14 +59,48 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return user
 
 
+class ClientLoginSerializer(serializers.Serializer):
+    """Client login serializer"""
+    user_email = serializers.EmailField(required=True)
+    user_password = serializers.CharField(write_only=True, required=True)
+    remember_me = serializers.BooleanField(required=False, default=False)
+
+    def validate(self, attrs):
+        email = attrs.get('user_email')
+        password = attrs.get('user_password')
+        
+        if email and password:
+            from django.contrib.auth import authenticate
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            
+            # Try to authenticate with email as username first
+            user = authenticate(username=email, password=password)
+            
+            # If that fails, try to find user by email and authenticate with username
+            if not user:
+                try:
+                    user_obj = User.objects.get(email=email)
+                    user = authenticate(username=user_obj.username, password=password)
+                except User.DoesNotExist:
+                    pass
+            
+            if not user:
+                raise serializers.ValidationError({"user_email": "Invalid email or password."})
+            if not user.is_active:
+                raise serializers.ValidationError({"user_email": "User account is disabled."})
+            attrs['user'] = user
+        return attrs
+
+
 class ClientRegistrationSerializer(serializers.Serializer):
     """Client registration serializer that accepts frontend field names"""
     user_name = serializers.CharField(required=True, max_length=255)
     user_email = serializers.EmailField(required=True)
-    user_phone_number = serializers.CharField(required=True, max_length=20)
-    user_company_name = serializers.CharField(required=True, max_length=255)
-    user_gst = serializers.CharField(required=True, max_length=50)
-    user_address = serializers.CharField(required=True)
+    user_phone_number = serializers.CharField(required=False, max_length=20, allow_blank=True)
+    user_company_name = serializers.CharField(required=False, max_length=255, allow_blank=True)
+    user_gst = serializers.CharField(required=False, max_length=50, allow_blank=True)
+    user_address = serializers.CharField(required=False, allow_blank=True)
     user_password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     confirm_password = serializers.CharField(write_only=True, required=True)
 
@@ -95,10 +129,10 @@ class ClientRegistrationSerializer(serializers.Serializer):
             'email': user_email,
             'first_name': first_name,
             'last_name': last_name,
-            'phone_number': validated_data.pop('user_phone_number', None),
-            'company_name': validated_data.pop('user_company_name', None),
-            'gst': validated_data.pop('user_gst', None),
-            'address': validated_data.pop('user_address', None),
+            'phone_number': validated_data.pop('user_phone_number', None) or None,
+            'company_name': validated_data.pop('user_company_name', None) or None,
+            'gst': validated_data.pop('user_gst', None) or None,
+            'address': validated_data.pop('user_address', None) or None,
         }
         
         user = User.objects.create_user(password=password, **user_data)
@@ -161,15 +195,32 @@ class CustomizeOrdersSerializer(serializers.ModelSerializer):
 class AddToCartSerializer(serializers.ModelSerializer):
     """Add to Cart serializer"""
     cart_user_username = serializers.CharField(source='cart_user.username', read_only=True)
+    product_image = serializers.SerializerMethodField()
 
     class Meta:
         model = AddToCart
         fields = [
             'id', 'cart_user', 'cart_user_username', 'cart_product',
-            'cart_quantity', 'cart_status',
+            'cart_quantity', 'cart_status', 'product_image',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_product_image(self, obj):
+        """Try to get product image from cart_product field"""
+        try:
+            # If cart_product is a product ID (numeric string), try to get the product
+            if obj.cart_product and obj.cart_product.isdigit():
+                from .models import Product
+                product = Product.objects.filter(id=int(obj.cart_product), is_delete=False).first()
+                if product and product.product_image:
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(product.product_image.url)
+                    return product.product_image.url
+        except (ValueError, AttributeError):
+            pass
+        return None
 
 
 class BannersSerializer(serializers.ModelSerializer):
@@ -250,4 +301,3 @@ class SessionSerializer(serializers.ModelSerializer):
             'fcm_token', 'device_type', 'created_at', 'updated_at', 'expire_date'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-

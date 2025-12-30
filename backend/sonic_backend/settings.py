@@ -19,7 +19,11 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-produc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+# Allow all hosts in development, specific hosts in production
+if DEBUG:
+    ALLOWED_HOSTS = ['*']  # Allow all hosts in development
+else:
+    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Application definition
@@ -164,9 +168,12 @@ SPECTACULAR_SETTINGS = {
 # CORS settings
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:8081',
+    default='http://localhost:3000,http://localhost:8081,http://10.87.231.72:3000,exp://10.87.231.72:8081',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
+
+# Allow all origins in development (for mobile app testing)
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=DEBUG, cast=bool)
 
 CORS_ALLOW_CREDENTIALS = True
 

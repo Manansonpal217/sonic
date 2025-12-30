@@ -12,10 +12,11 @@ import { initHttpClient } from './src/core';
 import { BASE_URL } from './src/api/EndPoint';
 import { authStore } from './src/stores/AuthStore';
 
+// Initialize HTTP client synchronously before app renders
+initHttpClient(BASE_URL);
+
 export default function App() {
 	useEffect(() => {
-		// Initialize HTTP client
-		initHttpClient(BASE_URL);
 		// Load auth data
 		authStore.loadAuthData();
 	}, []);
@@ -50,4 +51,5 @@ export default function App() {
 		</GestureHandlerRootView>
 	);
 }
+
 

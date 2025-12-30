@@ -15,7 +15,7 @@ from .models import (
     OrderEmails, Session
 )
 from .serializers import (
-    UserSerializer, UserCreateSerializer, ClientRegistrationSerializer,
+    UserSerializer, UserCreateSerializer, ClientRegistrationSerializer, ClientLoginSerializer,
     ProductSerializer, OrderSerializer, CustomizeOrdersSerializer, AddToCartSerializer,
     BannersSerializer, CMSSerializer, NotificationTypeSerializer,
     NotificationTableSerializer, OrderEmailsSerializer, SessionSerializer
@@ -182,6 +182,12 @@ class AddToCartViewSet(viewsets.ModelViewSet):
     filterset_fields = ['cart_status', 'cart_user']
     ordering_fields = ['created_at']
     ordering = ['-created_at']
+
+    def get_serializer_context(self):
+        """Add request to serializer context for building absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -414,6 +420,89 @@ class SessionViewSet(viewsets.ModelViewSet):
 
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
+import secrets
+import hashlib
+
+
+@extend_schema(
+    summary="Client login",
+    description="Login endpoint for client authentication",
+    request=ClientLoginSerializer,
+    responses={200: {'type': 'object', 'properties': {'token': {'type': 'string'}, 'user': {'type': 'object'}}}}
+)
+class ClientLoginView(APIView):
+    """Custom login endpoint for client authentication"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ClientLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            remember_me = serializer.validated_data.get('remember_me', False)
+            
+            # Generate a simple token (in production, use JWT or Django's TokenAuthentication)
+            token = self.generate_token(user)
+            
+            # Update last login (Django 5.0+ compatible)
+            from django.utils import timezone
+            user.last_login = timezone.now()
+            user.save(update_fields=['last_login'])
+            
+            # Create or update session for remember me functionality
+            if remember_me:
+                # Generate a session key that fits within 40 character limit
+                session_key = request.data.get('session_key', secrets.token_urlsafe(24)[:40])
+                Session.objects.update_or_create(
+                    session_user=user,
+                    defaults={
+                        'session_key': session_key,
+                        'expire_date': timezone.now() + timezone.timedelta(days=30),  # 30 days for remember me
+                    }
+                )
+            
+            response_serializer = UserSerializer(user)
+            # Build user response with all fields
+            user_data = {
+                'id': user.id,
+                'userName': user.get_full_name() or user.username,
+                'userEmail': user.email,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name or '',
+                'last_name': user.last_name or '',
+                'phone_number': user.phone_number or '',
+                'company_name': user.company_name or '',
+                'gst': user.gst or '',
+                'address': user.address or '',
+                'user_status': user.user_status,
+                'is_active': user.is_active,
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
+            }
+            
+            # Add date fields if they exist
+            if user.date_joined:
+                user_data['date_joined'] = user.date_joined.isoformat()
+            if user.last_login:
+                user_data['last_login'] = user.last_login.isoformat()
+            if hasattr(user, 'created_at') and user.created_at:
+                user_data['created_at'] = user.created_at.isoformat()
+            if hasattr(user, 'updated_at') and user.updated_at:
+                user_data['updated_at'] = user.updated_at.isoformat()
+            
+            return Response({
+                'token': token,
+                'user': user_data,
+                'message': 'Login successful'
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def generate_token(self, user):
+        """Generate a simple token for the user"""
+        # Create a token based on user ID, email, and timestamp
+        token_string = f"{user.id}:{user.email}:{timezone.now().isoformat()}"
+        token = hashlib.sha256(token_string.encode()).hexdigest()
+        return token
 
 
 @extend_schema(

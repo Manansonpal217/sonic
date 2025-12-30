@@ -9,6 +9,12 @@ config.resolver = {
 	sourceExts: [...config.resolver.sourceExts, 'jsx', 'js', 'ts', 'tsx'],
 };
 
+// Configure server to use port 3000
+config.server = {
+	...config.server,
+	port: 3000,
+};
+
 // Disable Fast Refresh if it's causing issues (uncomment if needed)
 // config.server = {
 //   ...config.server,

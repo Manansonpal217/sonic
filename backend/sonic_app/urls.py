@@ -4,7 +4,7 @@ from .views import (
     UserViewSet, ProductViewSet, OrderViewSet,
     CustomizeOrdersViewSet, AddToCartViewSet, BannersViewSet,
     CMSViewSet, NotificationTypeViewSet, NotificationTableViewSet,
-    OrderEmailsViewSet, SessionViewSet, ClientRegistrationView
+    OrderEmailsViewSet, SessionViewSet, ClientRegistrationView, ClientLoginView
 )
 
 router = DefaultRouter()
@@ -22,7 +22,8 @@ router.register(r'sessions', SessionViewSet, basename='session')
 
 urlpatterns = [
     path('', include(router.urls)),
-    # Client registration endpoint
+    # Client authentication endpoints
+    path('client-login', ClientLoginView.as_view(), name='client-login'),
     path('client-registration', ClientRegistrationView.as_view(), name='client-registration'),
 ]
 

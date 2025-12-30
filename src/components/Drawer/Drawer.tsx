@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import { useNavigationState } from '@react-navigation/native';
 import { canUseReanimated, canUseDeviceInfo } from '../../Utils/nativeModules';
 
-// Lazy-load native modules only when needed - never require in Expo Go
+// Lazy-load native modules only when needed
 const getDeviceInfo = () => {
-	// In Expo Go, canUseDeviceInfo() will return false, so we never require
 	if (!canUseDeviceInfo()) {
 		return { getVersion: () => '1.0.0' };
 	}
-	// Only require if we're sure it's available (development build)
 	try {
 		return require('react-native-device-info').default;
 	} catch {
@@ -17,9 +16,7 @@ const getDeviceInfo = () => {
 };
 
 const getReanimated = () => {
-	// In Expo Go, canUseReanimated() will return false
 	if (!canUseReanimated()) {
-		// Fallback to React Native Animated (always available)
 		const RNAnimated = require('react-native').Animated;
 		return {
 			default: RNAnimated,
@@ -30,11 +27,9 @@ const getReanimated = () => {
 			withDelay: (delay: number, val: any) => val,
 		};
 	}
-	// Only require if we're sure it's available (development build)
 	try {
 		return require('react-native-reanimated');
 	} catch {
-		// Fallback to React Native Animated
 		const RNAnimated = require('react-native').Animated;
 		return {
 			default: RNAnimated,
@@ -46,6 +41,7 @@ const getReanimated = () => {
 		};
 	}
 };
+
 import { Box } from '../Box';
 import { Text } from '../Text';
 import { fonts } from '../../style';
@@ -59,6 +55,7 @@ import { authStore } from '../../stores/AuthStore';
 import { authFactory } from '../../factory';
 import { DeviceHelper } from '../../helper/DeviceHelper';
 import { LogoutPopup } from './LogoutPopup';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface DrawersProps {
 	onClosePress: () => void;
@@ -67,7 +64,7 @@ export interface DrawersProps {
 export const DrawersItem: React.FC<DrawersProps> = observer(({
 	onClosePress,
 }: DrawersProps) => {
-	// Check if we can use native modules (lazy check)
+	// Check if we can use native modules
 	const hasReanimated = canUseReanimated();
 	const DeviceInfo = getDeviceInfo();
 	
@@ -89,7 +86,6 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 			withTiming = Reanimated.withTiming;
 			withDelay = Reanimated.withDelay;
 		} catch {
-			// Fallback to React Native
 			const RNAnimated = require('react-native').Animated;
 			Animated = RNAnimated;
 			useAnimatedStyle = () => ({});
@@ -99,7 +95,6 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 			withDelay = (delay: number, val: any) => val;
 		}
 	} else {
-		// Expo Go fallback - no animations
 		const RNAnimated = require('react-native').Animated;
 		Animated = RNAnimated;
 		useAnimatedStyle = () => ({});
@@ -111,89 +106,57 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 
 	const [isLogoutVisible, setIsLogoutVisible] = useState(false);
 	const [isDeleteVisible, setIsDeleteVisible] = useState(false);
+	const insets = useSafeAreaInsets();
+	const topPadding = Math.max(insets.top, 44); // Ensure at least 44px for Dynamic Island
+	const bottomPadding = Math.max(insets.bottom, 20); // Safe area padding for bottom
 
-	// Organized menu items into logical groups
+	// Get current route for active state indicator
+	const currentRoute = useNavigationState(state => {
+		const route = state?.routes[state?.index];
+		return route?.name;
+	});
+
+	// Minimal menu items with route mapping
 	const primaryMenuItems = [
 		{
-			label: 'All Products',
+			label: 'Dashboard',
+			route: Route.Dashboard,
 			onPress: () => {
 				onClosePress();
-				// navigate({ screenName: Route.ProductList });
+				navigate({ screenName: Route.Dashboard });
 			},
 			svgName: Images.order,
+			isPrimary: true,
 		},
 		{
 			label: 'My Orders',
+			route: 'OrderList', // Placeholder
 			onPress: () => {
 				onClosePress();
 				// navigate({ screenName: Route.OrderList });
 			},
 			svgName: Images.order,
-		},
-		{
-			label: 'My Profile',
-			onPress: () => {
-				onClosePress();
-				// navigate({ screenName: Route.UpdateProfile });
-			},
-			svgName: Images.order,
-		},
-	];
-
-	const supportMenuItems = [
-		{
-			label: 'Help & Support',
-			onPress: () => {
-				onClosePress();
-				// navigate({
-				// 	screenName: Route.WebView,
-				// 	params: {
-				// 		url: 'https://app.sonicjewellersltd.com/help',
-				// 		title: 'Help',
-				// 	},
-				// });
-			},
-			svgName: Images.order,
-		},
-		{
-			label: 'Contact Us',
-			onPress: () => {
-				onClosePress();
-				// navigate({
-				// 	screenName: Route.WebView,
-				// 	params: {
-				// 		url: 'https://app.sonicjewellersltd.com/contact-us',
-				// 		title: 'Contact Us',
-				// 	},
-				// });
-			},
-			svgName: Images.order,
+			isPrimary: true,
 		},
 		{
 			label: 'About Us',
+			route: 'AboutUs', // Placeholder
 			onPress: () => {
 				onClosePress();
-				// navigate({
-				// 	screenName: Route.WebView,
-				// 	params: {
-				// 		url: 'https://app.sonicjewellersltd.com/about-us',
-				// 		title: 'About Us',
-				// 	},
-				// });
+				// navigate({ screenName: Route.AboutUs });
 			},
 			svgName: Images.order,
+			isPrimary: false,
 		},
-	];
-
-	const accountMenuItems = [
 		{
-			label: 'Delete Account',
-			onPress: async () => {
+			label: 'Contact Us',
+			route: 'ContactUs', // Placeholder
+			onPress: () => {
 				onClosePress();
-				setIsDeleteVisible(true);
+				// navigate({ screenName: Route.ContactUs });
 			},
 			svgName: Images.order,
-			isDestructive: true,
+			isPrimary: false,
 		},
 	];
 
@@ -220,27 +183,63 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 	};
 
 	return (
-		<Box flex={1} height="100%" backgroundColor="white" paddingBottom="r">
+		<Box 
+			flex={1} 
+			height="100%" 
+			backgroundColor="white"
+			style={{ 
+				paddingTop: topPadding,
+			}}
+		>
+			{/* Gradient Background Overlay - Subtle accent color */}
+			<Box
+				position="absolute"
+				top={0}
+				left={0}
+				right={0}
+				height="35%"
+				style={{
+					backgroundColor: '#FFF8F5',
+					opacity: 0.5,
+				}}
+			/>
+			
 			<DrawerHeader onClose={onClosePress} />
 			
+			{/* Brand Logo Section */}
+			<Box 
+				alignItems="center" 
+				justifyContent="center" 
+				paddingVertical="lg"
+				marginTop="m"
+			>
+				<Image 
+					source={Images.logo} 
+					height={120} 
+					width={120} 
+					resizeMode="contain"
+				/>
+			</Box>
+			
 			{/* Primary Menu Section */}
-			<Box marginTop="m" paddingBottom="s">
+			<Box marginTop="m" paddingBottom="xl" style={{ zIndex: 1 }}>
 				{primaryMenuItems.map((value, index) => {
 					const MenuItem = ({ item, itemIndex }: { item: typeof value; itemIndex: number }) => {
 						const translateX = useSharedValue(-50);
 						const opacity = useSharedValue(0);
 						const scale = useSharedValue(0.9);
 						const pressScale = useSharedValue(1);
+						const isActive = currentRoute === item.route;
 
 						useEffect(() => {
-							translateX.value = withDelay(itemIndex * 80, withSpring(0, {
-								damping: 12,
-								stiffness: 100,
+							translateX.value = withDelay(itemIndex * 60, withSpring(0, {
+								damping: 15,
+								stiffness: 120,
 							}));
-							opacity.value = withDelay(itemIndex * 80, withTiming(1, { duration: 300 }));
-							scale.value = withDelay(itemIndex * 80, withSpring(1, {
-								damping: 12,
-								stiffness: 100,
+							opacity.value = withDelay(itemIndex * 60, withTiming(1, { duration: 400 }));
+							scale.value = withDelay(itemIndex * 60, withSpring(1, {
+								damping: 15,
+								stiffness: 120,
 							}));
 						}, []);
 
@@ -267,30 +266,90 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 						};
 
 						return (
-							<Animated.View style={animatedStyle}>
-								<Pressable
-									onPress={item.onPress}
-									onPressIn={handlePressIn}
-									onPressOut={handlePressOut}
-									flexDirection="row"
+							<Animated.View style={[animatedStyle, { width: '100%' }]}>
+								<Box 
+									marginBottom="m"
+									paddingLeft="xl"
+									paddingRight="m"
 									height={52}
-									justifyContent="space-between"
-									marginHorizontal="r"
-									marginBottom="es"
-									alignItems="center"
-									paddingHorizontal="s"
-									borderRadius={8}
-									backgroundColor="gray5"
+									justifyContent="center"
+									borderRadius={12}
+									width="100%"
+									style={{
+										backgroundColor: isActive ? '#FFF8F5' : 'white',
+										elevation: isActive ? 5 : 3,
+										shadowColor: isActive ? '#842B25' : '#000',
+										shadowOffset: { width: 0, height: isActive ? 3 : 2 },
+										shadowOpacity: isActive ? 0.18 : 0.12,
+										shadowRadius: isActive ? 6 : 4,
+										borderWidth: 1,
+										borderColor: isActive ? '#F5D5C8' : '#F0F0F0',
+										overflow: 'hidden',
+									}}
 								>
-									<Text fontFamily={fonts.medium} fontSize={15} color="black" letterSpacing={0.2}>
-										{item.label}
-									</Text>
-									<Image
-										source={Images.rightArrow}
-										width={18}
-										height={18}
-									/>
-								</Pressable>
+									{/* Active indicator bar on the left */}
+									{isActive && (
+										<Box
+											position="absolute"
+											left={0}
+											top={0}
+											bottom={0}
+											width={4}
+											style={{
+												backgroundColor: '#842B25',
+												borderTopRightRadius: 4,
+												borderBottomRightRadius: 4,
+											}}
+										/>
+									)}
+									{/* Active background accent */}
+									{isActive && (
+										<Box
+											position="absolute"
+											left={0}
+											top={0}
+											bottom={0}
+											right={0}
+											style={{
+												backgroundColor: 'rgba(132, 43, 37, 0.03)',
+											}}
+										/>
+									)}
+									<Pressable
+										onPress={item.onPress}
+										onPressIn={handlePressIn}
+										onPressOut={handlePressOut}
+										style={{
+											flexDirection: 'row',
+											alignItems: 'center',
+											width: '100%',
+											height: '100%',
+											position: 'relative',
+											zIndex: 1,
+										}}
+									>
+										{/* Active indicator dot */}
+										{isActive && (
+											<Box
+												width={6}
+												height={6}
+												borderRadius={3}
+												style={{
+													backgroundColor: '#842B25',
+													marginRight: 8,
+												}}
+											/>
+										)}
+										<Text 
+											fontFamily={isActive ? fonts.bold : (item.isPrimary ? fonts.semiBold : fonts.medium)} 
+											fontSize={item.isPrimary ? 16 : 15} 
+											color={isActive ? '#842B25' : 'black'} 
+											letterSpacing={isActive ? 0.1 : -0.2}
+										>
+											{item.label}
+										</Text>
+									</Pressable>
+								</Box>
 							</Animated.View>
 						);
 					};
@@ -299,172 +358,7 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 				})}
 			</Box>
 
-			{/* Support Section */}
-			<Box marginTop="m" paddingTop="s" paddingBottom="s">
-				<Text 
-					marginHorizontal="r" 
-					marginBottom="s"
-					fontFamily={fonts.semiBold} 
-					fontSize={12} 
-					color="gray"
-					letterSpacing={0.5}
-					textTransform="uppercase"
-				>
-					Support
-				</Text>
-				{supportMenuItems.map((value, index) => {
-					const MenuItem = ({ item, itemIndex }: { item: typeof value; itemIndex: number }) => {
-						const translateX = useSharedValue(-30);
-						const opacity = useSharedValue(0);
-						const pressScale = useSharedValue(1);
-
-						useEffect(() => {
-							translateX.value = withDelay(itemIndex * 60 + 300, withSpring(0, {
-								damping: 12,
-								stiffness: 100,
-							}));
-							opacity.value = withDelay(itemIndex * 60 + 300, withTiming(1, { duration: 300 }));
-						}, []);
-
-						const animatedStyle = useAnimatedStyle(() => ({
-							transform: [
-								{ translateX: translateX.value },
-								{ scale: pressScale.value },
-							],
-							opacity: opacity.value,
-						}));
-
-						const handlePressIn = () => {
-							pressScale.value = withSpring(0.97, {
-								damping: 15,
-								stiffness: 300,
-							});
-						};
-
-						const handlePressOut = () => {
-							pressScale.value = withSpring(1, {
-								damping: 15,
-								stiffness: 300,
-							});
-						};
-
-						return (
-							<Animated.View style={animatedStyle}>
-								<Pressable
-									onPress={item.onPress}
-									onPressIn={handlePressIn}
-									onPressOut={handlePressOut}
-									flexDirection="row"
-									height={48}
-									justifyContent="space-between"
-									marginHorizontal="r"
-									marginBottom="es"
-									alignItems="center"
-									paddingHorizontal="s"
-								>
-									<Text fontFamily={fonts.regular} fontSize={14} color="black">
-										{item.label}
-									</Text>
-									<Image
-										source={Images.rightArrow}
-										width={16}
-										height={16}
-									/>
-								</Pressable>
-							</Animated.View>
-						);
-					};
-
-					return <MenuItem key={`support-${index}`} item={value} itemIndex={index} />;
-				})}
-			</Box>
-
-			{/* Account Actions Section */}
-			{authStore.isLogin() && (
-				<Box marginTop="m" paddingTop="s" paddingBottom="s">
-					<Text 
-						marginHorizontal="r" 
-						marginBottom="s"
-						fontFamily={fonts.semiBold} 
-						fontSize={12} 
-						color="gray"
-						letterSpacing={0.5}
-						textTransform="uppercase"
-					>
-						Account
-					</Text>
-					{accountMenuItems.map((value, index) => {
-						const MenuItem = ({ item, itemIndex }: { item: typeof value; itemIndex: number }) => {
-							const translateX = useSharedValue(-30);
-							const opacity = useSharedValue(0);
-							const pressScale = useSharedValue(1);
-
-							useEffect(() => {
-								translateX.value = withDelay(itemIndex * 60 + 500, withSpring(0, {
-									damping: 12,
-									stiffness: 100,
-								}));
-								opacity.value = withDelay(itemIndex * 60 + 500, withTiming(1, { duration: 300 }));
-							}, []);
-
-							const animatedStyle = useAnimatedStyle(() => ({
-								transform: [
-									{ translateX: translateX.value },
-									{ scale: pressScale.value },
-								],
-								opacity: opacity.value,
-							}));
-
-							const handlePressIn = () => {
-								pressScale.value = withSpring(0.97, {
-									damping: 15,
-									stiffness: 300,
-								});
-							};
-
-							const handlePressOut = () => {
-								pressScale.value = withSpring(1, {
-									damping: 15,
-									stiffness: 300,
-								});
-							};
-
-							return (
-								<Animated.View style={animatedStyle}>
-									<Pressable
-										onPress={item.onPress}
-										onPressIn={handlePressIn}
-										onPressOut={handlePressOut}
-										flexDirection="row"
-										height={48}
-										justifyContent="space-between"
-										marginHorizontal="r"
-										marginBottom="es"
-										alignItems="center"
-										paddingHorizontal="s"
-									>
-										<Text 
-											fontFamily={fonts.regular} 
-											fontSize={14} 
-											color={item.isDestructive ? "red3" : "black"}
-										>
-											{item.label}
-										</Text>
-										<Image
-											source={Images.rightArrow}
-											width={16}
-											height={16}
-										/>
-									</Pressable>
-								</Animated.View>
-							);
-						};
-
-						return <MenuItem key={`account-${index}`} item={value} itemIndex={index} />;
-					})}
-				</Box>
-			)}
-
+			{/* Logout Button at Bottom */}
 			{authStore.isLogin() && (() => {
 				const LogoutButton = () => {
 					const translateY = useSharedValue(30);
@@ -502,39 +396,56 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 					};
 
 					return (
-						<Animated.View style={animatedStyle}>
-							<Pressable
-								onPress={() => {
-									setIsLogoutVisible(true);
-									onClosePress();
-								}}
-								onPressIn={handlePressIn}
-								onPressOut={handlePressOut}
-								position="absolute"
-								bottom={DeviceHelper.calculateHeightRatio(60)}
-								left={0}
-								right={0}
-								flexDirection="row"
-								justifyContent="center"
-								alignItems="center"
-								marginHorizontal="r"
-								borderRadius={10}
-								paddingVertical="r"
-								backgroundColor="gray5"
-								elevation={2}
-							>
-								<Image source={Images.logout} width={18} height={18} />
-								<Text
-									paddingStart="s"
-									color="black"
-									fontSize={15}
-									fontFamily={fonts.semiBold}
-									letterSpacing={0.3}
+						<Box
+							position="absolute"
+							bottom={0}
+							left={0}
+							right={0}
+							style={{
+								borderTopWidth: 1,
+								borderTopColor: '#F0F0F0',
+							}}
+						>
+							<Animated.View style={animatedStyle}>
+								<Pressable
+									onPress={() => {
+										setIsLogoutVisible(true);
+										onClosePress();
+									}}
+									onPressIn={handlePressIn}
+									onPressOut={handlePressOut}
+									style={{ width: '100%' }}
 								>
-									Logout
-								</Text>
-							</Pressable>
-						</Animated.View>
+									<Box
+										flexDirection="row"
+										justifyContent="center"
+										alignItems="center"
+										borderRadius={0}
+										paddingHorizontal="m"
+										backgroundColor="red3"
+										style={{
+											minHeight: 52,
+											paddingTop: 16,
+											paddingBottom: 16 + bottomPadding,
+											elevation: 3,
+											shadowColor: '#000',
+											shadowOffset: { width: 0, height: 2 },
+											shadowOpacity: 0.2,
+											shadowRadius: 4,
+										}}
+									>
+										<Text
+											color="white"
+											fontSize={16}
+											fontFamily={fonts.bold}
+											letterSpacing={0.3}
+										>
+											🚪 Logout
+										</Text>
+									</Box>
+								</Pressable>
+							</Animated.View>
+						</Box>
 					);
 				};
 
@@ -569,23 +480,6 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 				message="Are you sure you want to delete Account?"
 				Visible={isDeleteVisible}
 			/>
-			<Box
-				position="absolute"
-				bottom={8}
-				flexDirection="row"
-				alignSelf="center"
-				paddingHorizontal="r"
-			>
-				<Text
-					color="gray"
-					fontFamily={fonts.regular}
-					fontSize={12}
-					letterSpacing={0.3}
-				>
-					Version {DeviceInfo.getVersion()}
-				</Text>
-			</Box>
 		</Box>
 	);
 });
-

@@ -45,6 +45,19 @@ export class Http {
 		}
 	}
 
+	async patch<T>(url: string, data?: any, config?: any): Promise<Result<T>> {
+		try {
+			const response: AxiosResponse<T> = await this.client.patch(url, data, config);
+			return success(response.data, (response.data as any)?.message as string);
+		} catch (error: any) {
+			const errorMessage = error.response?.data?.message || 
+				error.response?.data?.error || 
+				error.message || 
+				'Request failed';
+			return failure(errorMessage, error.response?.data?.message);
+		}
+	}
+
 	async delete<T>(url: string, config?: any): Promise<Result<T>> {
 		try {
 			const response: AxiosResponse<T> = await this.client.delete(url, config);

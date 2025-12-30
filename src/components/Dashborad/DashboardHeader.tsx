@@ -1,5 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Conditional imports for react-native-reanimated
 let Animated: any = null;
@@ -31,11 +32,15 @@ import { Text } from '../Text';
 import { Pressable } from '../Pressable';
 import { Search } from '../Search';
 import { fonts } from '../../style';
+import { authStore } from '../../stores/AuthStore';
+import { navigate, Route } from '../../navigation/AppNavigation';
+import { cartFactory } from '../../factory/CartFactory';
 
 export interface HeaderProps {
 	onMenuPress: () => void;
 	onNotificationPress: () => void;
 	onAddToCartPress: () => void;
+	onProfilePress?: () => void;
 	label: string;
 	onSearch: (text: string) => void;
 	search: string;
@@ -118,17 +123,24 @@ const AnimatedBadge: React.FC<{
 	if (!visible) return null;
 
 	return (
-		<Animated.View style={animatedStyle}>
+		<Animated.View 
+			style={[
+				animatedStyle,
+				{
+					position: 'absolute',
+					top: -4,
+					right: -4,
+					zIndex: 10,
+				}
+			]}
+		>
 			<Box 
 				height={18} 
-				position="absolute" 
 				justifyContent="center" 
 				alignItems="center" 
 				minWidth={18}
 				paddingHorizontal="es"
 				borderRadius={9} 
-				top={-2} 
-				right={-2} 
 				backgroundColor="red3"
 				borderWidth={2}
 				borderColor="white"
@@ -150,12 +162,55 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 	onNotificationPress,
 	onMenuPress,
 	onAddToCartPress,
+	onProfilePress,
 	label,
 	search,
 	onSearch,
 }: HeaderProps) => {
+	const insets = useSafeAreaInsets();
+	const topPadding = Math.max(insets.top, 44); // Ensure at least 44px for Dynamic Island
+	
+	const handleProfilePress = () => {
+		if (onProfilePress) {
+			onProfilePress();
+		} else {
+			navigate({ screenName: Route.Profile });
+		}
+	};
+
+	const handleCartPress = () => {
+		navigate({ screenName: Route.Cart });
+	};
+
+	const user = authStore?.loginData?.user;
+	const [cartCount, setCartCount] = React.useState(0);
 	const headerOpacity = useSharedValue(0);
 	const headerTranslateY = useSharedValue(-20);
+
+	// Fetch cart count only when component mounts or user login status changes
+	React.useEffect(() => {
+		const fetchCartCount = async () => {
+			if (authStore.isLogin()) {
+				try {
+					const response = await cartFactory.getCartListApi();
+					if (response.isSuccess && response.data) {
+						const totalItems = response.data.results?.reduce((sum, item) => sum + item.cart_quantity, 0) || 0;
+						setCartCount(totalItems);
+					} else {
+						setCartCount(0);
+					}
+				} catch (error) {
+					console.error('Failed to fetch cart count:', error);
+					setCartCount(0);
+				}
+			} else {
+				setCartCount(0);
+			}
+		};
+
+		fetchCartCount();
+		// Only fetch on mount and when login status changes, not constantly
+	}, [authStore.isLogin()]);
 
 	React.useEffect(() => {
 		headerOpacity.value = withTiming(1, { duration: 400 });
@@ -172,14 +227,14 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 
 	return (
 		<Animated.View style={headerAnimatedStyle}>
-			<Box backgroundColor="white" paddingBottom="s">
+			<Box backgroundColor="white" paddingBottom="s" style={{ paddingTop: topPadding }}>
 				<Box 
 					height={64} 
 					flexDirection="row" 
 					alignItems="center"
 					paddingHorizontal="r"
-					paddingTop="s"
 				>
+					{/* Hamburger Menu Button */}
 					<AnimatedButton onPress={onMenuPress} delay={0}>
 						<Box
 							justifyContent="center" 
@@ -188,21 +243,44 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 							height={40}
 							borderRadius={20}
 							backgroundColor="gray5"
+							marginEnd="s"
 						>
-							<Image source={Images.menu} height={22} width={22} />
+							{/* Three horizontal lines for hamburger menu */}
+							<Box>
+								<Box
+									width={20}
+									height={2}
+									style={{ backgroundColor: '#000000' }}
+									marginBottom="xs"
+									borderRadius={1}
+								/>
+								<Box
+									width={20}
+									height={2}
+									style={{ backgroundColor: '#000000' }}
+									marginBottom="xs"
+									borderRadius={1}
+								/>
+								<Box
+									width={20}
+									height={2}
+									style={{ backgroundColor: '#000000' }}
+									borderRadius={1}
+								/>
+							</Box>
 						</Box>
 					</AnimatedButton>
 					
-					<Box flex={1} alignItems="center" paddingHorizontal="s">
-						<Image 
-							source={Images.logo} 
-							resizeMode="cover" 
-							height={50} 
-							width={50} 
-						/>
-					</Box>
+					{/* Logo - positioned right next to hamburger */}
+					<Image 
+						source={Images.logo} 
+						resizeMode="cover" 
+						height={50} 
+						width={50} 
+					/>
 
-					<Box flexDirection="row" alignItems="center">
+					{/* Right side icons - flex to push to the right */}
+					<Box flex={1} flexDirection="row" alignItems="center" justifyContent="flex-end">
 						<AnimatedButton onPress={onNotificationPress} delay={50}>
 							<Box
 								justifyContent="center" 
@@ -212,12 +290,18 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 								borderRadius={20}
 								backgroundColor="gray5"
 								marginEnd="s"
+								position="relative"
 							>
 								<Image source={Images.notification} height={20} width={20} />
+								<AnimatedBadge 
+									count={0} 
+									visible={false}
+								/>
 							</Box>
 						</AnimatedButton>
 						
-						<AnimatedButton onPress={onAddToCartPress} delay={100}>
+						{/* Cart Icon - before avatar */}
+						<AnimatedButton onPress={handleCartPress} delay={100}>
 							<Box
 								justifyContent="center" 
 								alignItems="center"
@@ -225,14 +309,44 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 								height={40}
 								borderRadius={20}
 								backgroundColor="gray5"
-								position="relative"
+								marginEnd="s"
+								style={{ position: 'relative', overflow: 'visible' }}
 							>
 								<Image source={Images.shopping} height={20} width={20} />
 								<AnimatedBadge 
-									count={0} 
-									visible={false}
+									count={cartCount} 
+									visible={cartCount > 0}
 								/>
 							</Box>
+						</AnimatedButton>
+
+						{/* Avatar Button */}
+						<AnimatedButton onPress={handleProfilePress} delay={150}>
+							{authStore.isLogin() && user?.profilePic ? (
+								<Image
+									source={{ uri: user.profilePic }}
+									height={40}
+									width={40}
+									borderRadius={20}
+								/>
+							) : (
+								<Box
+									justifyContent="center" 
+									alignItems="center"
+									width={40}
+									height={40}
+									borderRadius={20}
+									backgroundColor="red3"
+								>
+									<Text
+										fontSize={18}
+										fontFamily={fonts.bold}
+										color="white"
+									>
+										{user?.userName?.charAt(0)?.toUpperCase() || 'U'}
+									</Text>
+								</Box>
+							)}
 						</AnimatedButton>
 					</Box>
 				</Box>

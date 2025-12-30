@@ -5,6 +5,8 @@ import { View, ActivityIndicator } from 'react-native';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegistrationScreen } from '../screens/RegistrationScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
+import { CartScreen } from '../screens/CartScreen';
 import { authStore } from '../stores/AuthStore';
 import { authFactory } from '../factory';
 import { showErrorMessage } from '../core';
@@ -13,12 +15,16 @@ export enum Route {
 	Login = 'Login',
 	Registration = 'Registration',
 	Dashboard = 'Dashboard',
+	Profile = 'Profile',
+	Cart = 'Cart',
 }
 
 export type RootStackParamList = {
 	[Route.Login]: undefined;
 	[Route.Registration]: undefined;
 	[Route.Dashboard]: undefined;
+	[Route.Profile]: undefined;
+	[Route.Cart]: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -119,6 +125,8 @@ export const AppNavigation = () => {
 			<Stack.Screen name={Route.Login} component={LoginScreen} />
 			<Stack.Screen name={Route.Registration} component={RegistrationScreen} />
 			<Stack.Screen name={Route.Dashboard} component={DashboardScreen} />
+			<Stack.Screen name={Route.Profile} component={ProfileScreen} />
+			<Stack.Screen name={Route.Cart} component={CartScreen} />
 		</Stack.Navigator>
 	);
 };

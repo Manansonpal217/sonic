@@ -3,9 +3,10 @@
 // Configuration for local development
 // For iOS Simulator: use 'http://localhost:8000/app'
 // For Android Emulator: use 'http://10.0.2.2:8000/app'
-// For Physical Devices: use your machine's IP (e.g., 'http://10.87.231.72:8000/app')
+// For Physical Devices: use your machine's IP (e.g., 'http://10.53.108.72:8000/app')
+// Current IP: 10.53.108.72 (update if your IP changes)
 export const BASE_URL = __DEV__ 
-	? 'http://10.87.231.72:8000/app' // Using your machine's IP for physical device testing
+	? 'http://10.53.108.72:8000/app' // Using your machine's IP for physical device testing
 	: 'https://api.sonicjewellersltd.in/app'; // production
 
 export const LOGIN = (): string => `${BASE_URL}/client-login`;
@@ -28,4 +29,6 @@ export const NOTIFICATION_LIST = (): string => `${BASE_URL}/noti-list`;
 export const UPDATE_PROFILE = (): string => `${BASE_URL}/update-profile`;
 export const DELETE_ACCOUNT = (): string => `${BASE_URL}/account-delete`;
 export const UPDATE_CART = (): string => `${BASE_URL}/update-cart`;
+export const CART_LIST = (): string => `${BASE_URL}/cart/`;
+export const CART_CLEAR = (): string => `${BASE_URL}/cart/clear_cart/`;
 

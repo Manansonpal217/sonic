@@ -95,12 +95,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 			setTimeout(async () => {
 				setIsLoading(false);
 				showSuccessMessage('Login successful! Welcome back! 🎉');
-				// Store dummy login data
+				// Store dummy login data with complete user object structure
 				await authStore.setLoginData({
 					token: 'dummy_token',
 					user: {
+						id: 6, // Demo user ID from seed data
+						username: 'demo',
 						userName: 'Demo User',
 						userEmail: email,
+						email: email,
+						first_name: 'Demo',
+						last_name: 'User',
+						phone_number: '+919876543215',
+						company_name: 'Sonic Gold Store',
+						gst: 'GST27FFFFF0000F6Z0',
+						address: '100 Demo Street, Bangalore, Karnataka 560001',
+						user_status: true,
+						is_active: true,
 					},
 				}, rememberMe ? { email, password } : null);
 				// Navigate to dashboard
@@ -110,18 +121,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 		}
 
 		// Regular API call
-		const response = await authFactory.loginApi(email, password);
+		const response = await authFactory.loginApi(email, password, rememberMe);
 		setIsLoading(false);
 		
 		if (response.isSuccess) {
 			showSuccessMessage('Login successful! Welcome back! 🎉');
-			// Store login data
-			if (response.data) {
-				await authStore.setLoginData(
-					response.data,
-					rememberMe ? { email, password } : null
-				);
-			}
 			// Navigate to dashboard
 			reset({ screenName: Route.Dashboard });
 		} else {
@@ -414,7 +418,7 @@ const styles = StyleSheet.create({
 	headerContainer: {
 		position: 'relative',
 		width: '100%',
-		marginBottom: 20,
+		marginBottom: 10,
 	},
 	headerImage: {
 		width: '100%',
@@ -445,6 +449,7 @@ const styles = StyleSheet.create({
 	},
 	welcomeContainer: {
 		paddingHorizontal: 24,
+		marginTop: -10,
 		marginBottom: 24,
 	},
 	formContainer: {

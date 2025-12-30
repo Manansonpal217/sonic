@@ -23,7 +23,7 @@ export const getHttpClient = (baseURL: string): AxiosInstance => {
 			Accept: 'application/json',
 			'Content-Type': 'application/json',
 		},
-		timeout: 1000 * 30 * 4, // Wait for 120 seconds
+		timeout: 30000, // Wait for 30 seconds
 		baseURL,
 	});
 

@@ -1,13 +1,39 @@
 import React, { useState } from 'react';
 import { ScrollView } from 'react-native';
-import { Box, Text, Screen, StatusBarType, DrawerMenu, DashboardHeader } from '../components';
+import { Box, Text, Screen, StatusBarType, DrawerMenu, DashboardHeader, DashboardBanner, BannerItem } from '../components';
 import { DeviceHelper } from '../helper/DeviceHelper';
 import { navigate, Route } from '../navigation/AppNavigation';
 import { fonts } from '../style';
+import { Images } from '../assets';
 
 export const DashboardScreen: React.FC = () => {
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [searchText, setSearchText] = useState('');
+
+	// Banner data using images from sonic app
+	const bannerData: BannerItem[] = [
+		{
+			imageUrl: Images.loginImage,
+			bannerProductId: '1',
+		},
+		{
+			imageUrl: Images.loginImg,
+			bannerProductId: '2',
+		},
+		{
+			imageUrl: Images.logo,
+			bannerProductId: '3',
+		},
+	];
+
+	const handleBannerPress = (item: BannerItem, index: number) => {
+		// Handle banner press - navigate to product detail or perform action
+		console.log('Banner pressed:', item, index);
+		if (item.bannerProductId) {
+			// Navigate to product detail if needed
+			// navigate({ screenName: Route.ProductDetail, params: { productId: item.bannerProductId } });
+		}
+	};
 
 	const handleMenuPress = () => {
 		setIsDrawerOpen(true);
@@ -27,6 +53,10 @@ export const DashboardScreen: React.FC = () => {
 		console.log('Navigate to cart');
 	};
 
+	const handleProfilePress = () => {
+		navigate({ screenName: Route.Profile });
+	};
+
 	const handleSearch = (text: string) => {
 		setSearchText(text);
 	};
@@ -44,6 +74,7 @@ export const DashboardScreen: React.FC = () => {
 						onMenuPress={handleMenuPress}
 						onNotificationPress={handleNotificationPress}
 						onAddToCartPress={handleAddToCartPress}
+						onProfilePress={handleProfilePress}
 						label="Dashboard"
 						search={searchText}
 						onSearch={handleSearch}
@@ -53,12 +84,20 @@ export const DashboardScreen: React.FC = () => {
 						contentContainerStyle={{ paddingBottom: 20 }}
 						showsVerticalScrollIndicator={false}
 					>
+						{/* Image Carousel Banner - Full Width */}
+						<DashboardBanner 
+							data={bannerData}
+							onBannerPress={handleBannerPress}
+						/>
+						
 						<Box flex={1} paddingHorizontal="r" paddingTop="m">
+							
 							{/* Dashboard content goes here */}
 							<Box
 								backgroundColor="gray5"
 								borderRadius={12}
 								padding="m"
+								marginTop="m"
 								marginBottom="m"
 							>
 								<Text
@@ -67,7 +106,7 @@ export const DashboardScreen: React.FC = () => {
 									color="black"
 									marginBottom="s"
 								>
-									Welcome to Dashboard
+									Welcome to Dashbaord
 								</Text>
 								<Text
 									fontSize={16}
