@@ -1,0 +1,11 @@
+# This file is for reference only. The project uses pyproject.toml with UV.
+# To install dependencies, use: uv pip install -e .
+
+django>=5.0.0
+djangorestframework>=3.14.0
+django-cors-headers>=4.3.0
+psycopg2-binary>=2.9.9
+pillow>=10.0.0
+python-decouple>=3.8
+django-filter>=23.3
+

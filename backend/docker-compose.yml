@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: sonic_postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-sonic_db}
+      POSTGRES_USER: ${DB_USER:-sonic_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sonic_password}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sonic_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: sonic_backend
+    command: sh -c "python manage.py makemigrations --noinput && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-sonic_db}
+      - DB_USER=${DB_USER:-sonic_user}
+      - DB_PASSWORD=${DB_PASSWORD:-sonic_password}
+
+  pgweb:
+    image: sosedoff/pgweb:latest
+    container_name: sonic_pgweb
+    ports:
+      - "8081:8081"
+    environment:
+      - PGWEB_DATABASE_URL=postgres://${DB_USER:-sonic_user}:${DB_PASSWORD:-sonic_password}@db:5432/${DB_NAME:-sonic_db}?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+

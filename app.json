@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Sonic Todo",
+    "slug": "sonic-todo-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "fonts": [
+      "src/assets/fonts/NunitoSans_7pt-Regular.ttf",
+      "src/assets/fonts/NunitoSans_7pt-Bold.ttf",
+      "src/assets/fonts/NunitoSans_7pt-SemiBold.ttf",
+      "src/assets/fonts/NunitoSans_7pt-Medium.ttf",
+      "src/assets/fonts/NunitoSans_7pt-Light.ttf",
+      "src/assets/fonts/NunitoSans_7pt-Italic.ttf",
+      "src/assets/fonts/NunitoSans_7pt-LightItalic.ttf"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sonic.todoapp"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.sonic.todoapp"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "sonic-todo"
+  }
+}
+
