@@ -210,11 +210,11 @@ export const CartScreen: React.FC = observer(() => {
 				{/* Header */}
 				<Box
 					backgroundColor="red3"
-					paddingBottom="xl"
+					paddingBottom="m"
 					paddingHorizontal="r"
-					style={{ paddingTop: topPadding + 16 }}
+					style={{ paddingTop: topPadding + 8 }}
 				>
-					<Box flexDirection="row" alignItems="center" marginBottom="lg">
+					<Box flexDirection="row" alignItems="center" marginBottom="s">
 						<Pressable onPress={goBack}>
 							<Box
 								width={40}
