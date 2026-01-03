@@ -10,3 +10,4 @@ export { Search } from './Search';
 export { DashboardHeader } from './Dashborad/DashboardHeader';
 export { DashboardBanner } from './Dashborad/DashboardBanner';
 export type { DashboardBannerProps, BannerItem } from './Dashborad/DashboardBanner';
+export { Toast } from './Toast';

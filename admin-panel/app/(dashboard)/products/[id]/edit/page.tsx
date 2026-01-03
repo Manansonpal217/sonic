@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useProduct, useUpdateProduct, useProducts } from '@/lib/hooks/useProducts';
+import { useProduct, useUpdateProduct } from '@/lib/hooks/useProducts';
+import { useCategories } from '@/lib/hooks/useCategories';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,6 +37,7 @@ const productSchema = z.object({
   product_name: z.string().min(1, 'Product name is required'),
   product_description: z.string().optional(),
   product_price: z.string().min(1, 'Price is required'),
+  product_category: z.string().optional(),
   product_is_parent: z.boolean().optional(),
   product_parent_id: z.string().optional(),
   product_status: z.boolean().optional(),
@@ -49,7 +51,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const router = useRouter();
   const { data: product, isLoading } = useProduct(productId);
   const updateProduct = useUpdateProduct();
-  const { data: productsData } = useProducts({ product_is_parent: true });
+  const { data: categoriesData } = useCategories({ category_status: true });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -64,16 +66,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     resolver: zodResolver(productSchema),
   });
 
-  const isParent = watch('product_is_parent');
-
   useEffect(() => {
     if (product) {
       reset({
         product_name: product.product_name,
         product_description: product.product_description || '',
         product_price: product.product_price,
-        product_is_parent: product.product_is_parent,
-        product_parent_id: product.product_parent_id ? String(product.product_parent_id) : '',
+        product_category: product.product_category ? String(product.product_category) : '',
         product_status: product.product_status,
       });
       if (product.product_image) {
@@ -99,9 +98,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       await updateProduct.mutateAsync({
         id: productId,
         data: {
-          ...data,
+          product_name: data.product_name,
+          product_description: data.product_description,
+          product_price: data.product_price,
           product_image: imageFile || undefined,
-          product_parent_id: data.product_parent_id ? parseInt(data.product_parent_id) : null,
+          product_category: data.product_category ? parseInt(data.product_category) : null,
+          product_is_parent: false,
+          product_parent_id: null,
+          product_status: data.product_status,
         },
       });
       router.push(`/products/${productId}`);
@@ -174,6 +178,26 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="product_category">Category</Label>
+                <Select
+                  value={watch('product_category') || undefined}
+                  onValueChange={(value) => setValue('product_category', value || '')}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoriesData?.results?.map((category) => (
+                      <SelectItem key={category.id} value={String(category.id)}>
+                        {category.category_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="product_price">Price *</Label>
                 <Input
                   id="product_price"
@@ -212,40 +236,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               <div className="space-y-2 md:col-span-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox
-                    id="product_is_parent"
-                    checked={isParent}
-                    onCheckedChange={(checked) => setValue('product_is_parent', checked as boolean)}
-                  />
-                  <Label htmlFor="product_is_parent">Is Parent Product</Label>
-                </div>
-              </div>
-
-              {!isParent && (
-                <div className="space-y-2">
-                  <Label htmlFor="product_parent_id">Parent Product</Label>
-                  <Select
-                    value={watch('product_parent_id')}
-                    onValueChange={(value) => setValue('product_parent_id', value)}
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select parent product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {productsData?.results?.map((p) => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          {p.product_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="space-y-2 md:col-span-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
                     id="product_status"
                     checked={watch('product_status')}
                     onCheckedChange={(checked) => setValue('product_status', checked as boolean)}
@@ -274,4 +264,5 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     </div>
   );
 }
+
 

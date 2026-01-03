@@ -1,10 +1,36 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
-    User, Product, Order, CustomizeOrders, AddToCart,
+    Category, CategoryField, User, Product, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
     Banners, CMS, NotificationType, NotificationTable,
     OrderEmails, Session
 )
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ['category_name', 'category_status', 'display_order', 'created_at']
+    list_filter = ['category_status', 'created_at']
+    search_fields = ['category_name', 'category_description']
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['display_order', '-created_at']
+
+
+@admin.register(CategoryField)
+class CategoryFieldAdmin(admin.ModelAdmin):
+    list_display = ['field_label', 'category', 'field_type', 'is_required', 'display_order', 'created_at']
+    list_filter = ['category', 'field_type', 'is_required', 'created_at']
+    search_fields = ['field_name', 'field_label']
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['category', 'display_order']
+
+
+@admin.register(ProductFieldValue)
+class ProductFieldValueAdmin(admin.ModelAdmin):
+    list_display = ['product', 'category_field', 'field_value', 'created_at']
+    list_filter = ['category_field', 'created_at']
+    search_fields = ['product__product_name', 'field_value']
+    readonly_fields = ['created_at', 'updated_at']
 
 
 @admin.register(User)
@@ -17,17 +43,32 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['product_name', 'product_price', 'product_status', 'product_is_parent', 'created_at']
-    list_filter = ['product_status', 'product_is_parent', 'created_at']
+    list_display = ['product_name', 'product_category', 'product_price', 'product_status', 'product_is_parent', 'created_at']
+    list_filter = ['product_category', 'product_status', 'product_is_parent', 'created_at']
     search_fields = ['product_name', 'product_description']
+    readonly_fields = ['created_at', 'updated_at']
+
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
     readonly_fields = ['created_at', 'updated_at']
 
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'order_user', 'order_product', 'order_quantity', 'order_price', 'order_status', 'created_at']
-    list_filter = ['order_status', 'created_at']
-    search_fields = ['order_user__username', 'order_product__product_name']
+    list_display = ['id', 'order_user', 'order_total_price', 'order_status', 'order_date', 'created_at']
+    list_filter = ['order_status', 'created_at', 'order_date']
+    search_fields = ['order_user__username', 'order_notes']
+    readonly_fields = ['created_at', 'updated_at']
+    inlines = [OrderItemInline]
+
+
+@admin.register(OrderItem)
+class OrderItemAdmin(admin.ModelAdmin):
+    list_display = ['id', 'order', 'product', 'quantity', 'price', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['order__id', 'product__product_name']
     readonly_fields = ['created_at', 'updated_at']
 
 
@@ -43,7 +84,7 @@ class CustomizeOrdersAdmin(admin.ModelAdmin):
 class AddToCartAdmin(admin.ModelAdmin):
     list_display = ['id', 'cart_user', 'cart_product', 'cart_quantity', 'cart_status', 'created_at']
     list_filter = ['cart_status', 'created_at']
-    search_fields = ['cart_user__username', 'cart_product']
+    search_fields = ['cart_user__username', 'cart_product__product_name']
     readonly_fields = ['created_at', 'updated_at']
 
 

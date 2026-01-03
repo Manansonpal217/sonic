@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { notificationTypesApi } from '@/lib/api';
+import { notificationTypesApi, type NotificationTypeCreate, type NotificationTypeUpdate } from '@/lib/api/notification-types';
+import type { NotificationType } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -12,20 +13,67 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/utils/formatters';
-import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function NotificationTypesPage() {
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingType, setEditingType] = useState<NotificationType | null>(null);
+  
+  const [formData, setFormData] = useState<NotificationTypeCreate>({
+    notif_name: '',
+    notif_status: true,
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['notification-types', { page, page_size: 20 }],
     queryFn: () => notificationTypesApi.list({ page, page_size: 20 }),
+  });
+
+  const createType = useMutation({
+    mutationFn: (data: NotificationTypeCreate) => notificationTypesApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-types'] });
+      toast.success('Notification type created successfully');
+      setIsCreateDialogOpen(false);
+      resetForm();
+    },
+    onError: () => {
+      toast.error('Failed to create notification type');
+    },
+  });
+
+  const updateType = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: NotificationTypeUpdate }) =>
+      notificationTypesApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-types'] });
+      toast.success('Notification type updated successfully');
+      setIsEditDialogOpen(false);
+      setEditingType(null);
+      resetForm();
+    },
+    onError: () => {
+      toast.error('Failed to update notification type');
+    },
   });
 
   const deleteType = useMutation({
@@ -45,6 +93,33 @@ export default function NotificationTypesPage() {
     }
   };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await createType.mutateAsync(formData);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingType) return;
+    await updateType.mutateAsync({ id: editingType.notif_id, data: formData });
+  };
+
+  const openEditDialog = (type: NotificationType) => {
+    setEditingType(type);
+    setFormData({
+      notif_name: type.notif_name,
+      notif_status: type.notif_status,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      notif_name: '',
+      notif_status: true,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -52,12 +127,50 @@ export default function NotificationTypesPage() {
           <h1 className="text-3xl font-bold">Notification Types</h1>
           <p className="text-muted-foreground">Manage notification type definitions</p>
         </div>
-        <Button className="bg-[#842B25] hover:bg-[#6b231f]" asChild>
-          <Link href="/notification-types/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Type
-          </Link>
-        </Button>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-[#842B25] hover:bg-[#6b231f]" onClick={resetForm}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Type
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <form onSubmit={handleCreate}>
+              <DialogHeader>
+                <DialogTitle>Create Notification Type</DialogTitle>
+                <DialogDescription>Add a new notification type</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="notif_name">Name *</Label>
+                  <Input
+                    id="notif_name"
+                    value={formData.notif_name}
+                    onChange={(e) => setFormData({ ...formData, notif_name: e.target.value })}
+                    placeholder="e.g., Order Update"
+                    required
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="notif_status"
+                    checked={formData.notif_status}
+                    onCheckedChange={(checked) => setFormData({ ...formData, notif_status: checked as boolean })}
+                  />
+                  <Label htmlFor="notif_status">Active</Label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]">
+                  Create Type
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="rounded-md border">
@@ -98,13 +211,15 @@ export default function NotificationTypesPage() {
                       {type.notif_status ? 'Active' : 'Inactive'}
                     </Badge>
                   </TableCell>
-                  <TableCell>{formatDate(type.created_at || '')}</TableCell>
+                  <TableCell>{type.created_at ? formatDate(type.created_at) : '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/notification-types/${type.notif_id}/edit`}>
-                          <Edit className="h-4 w-4" />
-                        </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditDialog(type)}
+                      >
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -147,7 +262,47 @@ export default function NotificationTypesPage() {
           </div>
         </div>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <form onSubmit={handleEdit}>
+            <DialogHeader>
+              <DialogTitle>Edit Notification Type</DialogTitle>
+              <DialogDescription>Update notification type information</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_notif_name">Name *</Label>
+                <Input
+                  id="edit_notif_name"
+                  value={formData.notif_name}
+                  onChange={(e) => setFormData({ ...formData, notif_name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="edit_notif_status"
+                  checked={formData.notif_status}
+                  onCheckedChange={(checked) => setFormData({ ...formData, notif_status: checked as boolean })}
+                />
+                <Label htmlFor="edit_notif_status">Active</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]">
+                Update Type
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 

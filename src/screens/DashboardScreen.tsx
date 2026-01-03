@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { ScrollView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Box, Text, Screen, StatusBarType, DrawerMenu, DashboardHeader, DashboardBanner, BannerItem } from '../components';
 import { DeviceHelper } from '../helper/DeviceHelper';
 import { navigate, Route } from '../navigation/AppNavigation';
@@ -9,6 +10,8 @@ import { Images } from '../assets';
 export const DashboardScreen: React.FC = () => {
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [searchText, setSearchText] = useState('');
+	const refreshNotificationCountRef = useRef<(() => void) | null>(null);
+	const refreshCartCountRef = useRef<(() => void) | null>(null);
 
 	// Banner data using images from sonic app
 	const bannerData: BannerItem[] = [
@@ -44,12 +47,11 @@ export const DashboardScreen: React.FC = () => {
 	};
 
 	const handleNotificationPress = () => {
-		// Navigate to notifications
-		console.log('Navigate to notifications');
+		navigate({ screenName: Route.Notification });
 	};
 
 	const handleAddToCartPress = () => {
-		// Navigate to cart
+		// Navigation is handled internally by DashboardHeader
 		console.log('Navigate to cart');
 	};
 
@@ -60,6 +62,22 @@ export const DashboardScreen: React.FC = () => {
 	const handleSearch = (text: string) => {
 		setSearchText(text);
 	};
+
+	// Refresh notification and cart count when screen comes into focus
+	useFocusEffect(
+		useCallback(() => {
+			// Small delay to ensure component is mounted
+			const timer = setTimeout(() => {
+				if (refreshNotificationCountRef.current) {
+					refreshNotificationCountRef.current();
+				}
+				if (refreshCartCountRef.current) {
+					refreshCartCountRef.current();
+				}
+			}, 100);
+			return () => clearTimeout(timer);
+		}, [])
+	);
 
 	return (
 		<Screen backgroundColor="white" statusBarType={StatusBarType.Dark}>
@@ -78,6 +96,8 @@ export const DashboardScreen: React.FC = () => {
 						label="Dashboard"
 						search={searchText}
 						onSearch={handleSearch}
+						refreshNotificationCount={refreshNotificationCountRef}
+						refreshCartCount={refreshCartCountRef}
 					/>
 					<ScrollView
 						style={{ flex: 1 }}

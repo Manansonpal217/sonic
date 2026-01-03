@@ -7,9 +7,17 @@ import { RegistrationScreen } from '../screens/RegistrationScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { CartScreen } from '../screens/CartScreen';
+import { NotificationScreen } from '../screens/NotificationScreen';
+import { ProductListScreen } from '../screens/ProductListScreen';
+import { ProductDetailScreen } from '../screens/ProductDetailScreen';
+import { CheckoutScreen } from '../screens/CheckoutScreen';
+import { OrderConfirmationScreen } from '../screens/OrderConfirmationScreen';
+import { OrdersScreen } from '../screens/OrdersScreen';
+import { OrderDetailScreen } from '../screens/OrderDetailScreen';
 import { authStore } from '../stores/AuthStore';
 import { authFactory } from '../factory';
 import { showErrorMessage } from '../core';
+import { CartItem } from '../api/CartApi';
 
 export enum Route {
 	Login = 'Login',
@@ -17,6 +25,13 @@ export enum Route {
 	Dashboard = 'Dashboard',
 	Profile = 'Profile',
 	Cart = 'Cart',
+	Notification = 'Notification',
+	ProductList = 'ProductList',
+	ProductDetail = 'ProductDetail',
+	Checkout = 'Checkout',
+	OrderConfirmation = 'OrderConfirmation',
+	Orders = 'Orders',
+	OrderDetail = 'OrderDetail',
 }
 
 export type RootStackParamList = {
@@ -25,6 +40,13 @@ export type RootStackParamList = {
 	[Route.Dashboard]: undefined;
 	[Route.Profile]: undefined;
 	[Route.Cart]: undefined;
+	[Route.Notification]: undefined;
+	[Route.ProductList]: { categoryId?: number; categoryName?: string };
+	[Route.ProductDetail]: { productId?: number };
+	[Route.Checkout]: { cartItems?: CartItem[]; isSingleItemCheckout?: boolean };
+	[Route.OrderConfirmation]: { order: any };
+	[Route.Orders]: undefined;
+	[Route.OrderDetail]: { orderId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -127,6 +149,13 @@ export const AppNavigation = () => {
 			<Stack.Screen name={Route.Dashboard} component={DashboardScreen} />
 			<Stack.Screen name={Route.Profile} component={ProfileScreen} />
 			<Stack.Screen name={Route.Cart} component={CartScreen} />
+			<Stack.Screen name={Route.Notification} component={NotificationScreen} />
+			<Stack.Screen name={Route.ProductList} component={ProductListScreen} />
+			<Stack.Screen name={Route.ProductDetail} component={ProductDetailScreen} />
+			<Stack.Screen name={Route.Checkout} component={CheckoutScreen} />
+			<Stack.Screen name={Route.OrderConfirmation} component={OrderConfirmationScreen} />
+			<Stack.Screen name={Route.Orders} component={OrdersScreen} />
+			<Stack.Screen name={Route.OrderDetail} component={OrderDetailScreen} />
 		</Stack.Navigator>
 	);
 };

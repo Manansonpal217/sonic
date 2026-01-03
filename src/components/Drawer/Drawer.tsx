@@ -56,6 +56,9 @@ import { authFactory } from '../../factory';
 import { DeviceHelper } from '../../helper/DeviceHelper';
 import { LogoutPopup } from './LogoutPopup';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getHttp } from '../../core';
+import { Category } from '../../api/CategoryApi';
+import { BASE_URL } from '../../api/EndPoint';
 
 export interface DrawersProps {
 	onClosePress: () => void;
@@ -106,6 +109,8 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 
 	const [isLogoutVisible, setIsLogoutVisible] = useState(false);
 	const [isDeleteVisible, setIsDeleteVisible] = useState(false);
+	const [categories, setCategories] = useState<Category[]>([]);
+	const [categoriesLoading, setCategoriesLoading] = useState(true);
 	const insets = useSafeAreaInsets();
 	const topPadding = Math.max(insets.top, 44); // Ensure at least 44px for Dynamic Island
 	const bottomPadding = Math.max(insets.bottom, 20); // Safe area padding for bottom
@@ -115,6 +120,84 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 		const route = state?.routes[state?.index];
 		return route?.name;
 	});
+
+	// Fetch categories with timeout handling
+	useEffect(() => {
+		const fetchCategories = async () => {
+			try {
+				setCategoriesLoading(true);
+				const http = getHttp();
+				
+				// Try active endpoint first (faster, returns array)
+				// Use full URL like cart endpoints do
+				try {
+					const categoriesUrl = `${BASE_URL}/categories/active/`;
+					console.log('Fetching categories from:', categoriesUrl);
+					const result = await http.get<any>(categoriesUrl);
+					
+					console.log('Categories response:', {
+						isSuccess: result?.isSuccess,
+						hasData: !!result?.data,
+						error: result?.error,
+					});
+					
+					if (result && result.isSuccess && result.data) {
+						// Active endpoint returns array directly, not paginated
+						const categoryList = Array.isArray(result.data) ? result.data : (result.data.results || []);
+						console.log('Loaded categories:', categoryList.length);
+						setCategories(categoryList);
+						setCategoriesLoading(false);
+						return;
+					}
+				} catch (activeError: any) {
+					// If active endpoint fails, try fallback
+					console.warn('Active categories endpoint failed, trying fallback...', activeError?.message);
+				}
+
+				// Fallback to regular endpoint with status filter
+				try {
+					const fallbackUrl = `${BASE_URL}/categories/?category_status=true&page_size=100`;
+					console.log('Trying fallback categories URL:', fallbackUrl);
+					const fallbackResult = await http.get<any>(fallbackUrl);
+					
+					if (fallbackResult && fallbackResult.isSuccess && fallbackResult.data) {
+						const categoryList = fallbackResult.data.results || fallbackResult.data || [];
+						setCategories(categoryList);
+					} else {
+						setCategories([]);
+					}
+				} catch (fallbackError: any) {
+					// If both fail, try without filter as last resort
+					try {
+						const lastResortUrl = `${BASE_URL}/categories/`;
+						console.log('Trying last resort categories URL:', lastResortUrl);
+						const lastResortResult = await http.get<any>(lastResortUrl);
+						
+						if (lastResortResult && lastResortResult.isSuccess && lastResortResult.data) {
+							const categoryList = lastResortResult.data.results || lastResortResult.data || [];
+							// Filter active categories client-side
+							const activeCategories = Array.isArray(categoryList) 
+								? categoryList.filter((cat: any) => cat.category_status !== false)
+								: [];
+							setCategories(activeCategories);
+						} else {
+							setCategories([]);
+						}
+					} catch (lastError: any) {
+						console.warn('All category endpoints failed:', lastError?.message);
+						setCategories([]);
+					}
+				}
+			} catch (error: any) {
+				console.warn('Category fetch error:', error?.message);
+				setCategories([]);
+			} finally {
+				setCategoriesLoading(false);
+			}
+		};
+
+		fetchCategories();
+	}, []);
 
 	// Minimal menu items with route mapping
 	const primaryMenuItems = [
@@ -130,10 +213,10 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 		},
 		{
 			label: 'My Orders',
-			route: 'OrderList', // Placeholder
+			route: Route.Orders,
 			onPress: () => {
 				onClosePress();
-				// navigate({ screenName: Route.OrderList });
+				navigate({ screenName: Route.Orders });
 			},
 			svgName: Images.order,
 			isPrimary: true,
@@ -343,7 +426,7 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 										<Text 
 											fontFamily={isActive ? fonts.bold : (item.isPrimary ? fonts.semiBold : fonts.medium)} 
 											fontSize={item.isPrimary ? 16 : 15} 
-											color={isActive ? '#842B25' : 'black'} 
+											style={{ color: isActive ? '#842B25' : 'black' }} 
 											letterSpacing={isActive ? 0.1 : -0.2}
 										>
 											{item.label}
@@ -356,6 +439,148 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 
 					return <MenuItem key={`primary-${index}`} item={value} itemIndex={index} />;
 				})}
+			</Box>
+
+			{/* Categories Section */}
+			<Box marginTop="m" paddingBottom="xl" style={{ zIndex: 1 }}>
+				<Box paddingLeft="xl" paddingRight="m" marginBottom="m">
+					<Text
+						fontSize={14}
+						fontFamily={fonts.semiBold}
+						color="gray"
+						textTransform="uppercase"
+						letterSpacing={1}
+					>
+						Categories
+					</Text>
+				</Box>
+				{categoriesLoading ? (
+					<Box paddingLeft="xl" paddingRight="m" paddingVertical="m">
+						<Text fontSize={14} fontFamily={fonts.regular} color="gray">
+							Loading categories...
+						</Text>
+					</Box>
+				) : categories.length > 0 ? (
+					categories.map((category, index) => {
+						const CategoryItem = ({ cat, catIndex }: { cat: Category; catIndex: number }) => {
+							const translateX = useSharedValue(-50);
+							const opacity = useSharedValue(0);
+							const scale = useSharedValue(0.9);
+							const pressScale = useSharedValue(1);
+							const isActive = currentRoute === Route.ProductList;
+
+							useEffect(() => {
+								translateX.value = withDelay((primaryMenuItems.length + catIndex) * 60, withSpring(0, {
+									damping: 15,
+									stiffness: 120,
+								}));
+								opacity.value = withDelay((primaryMenuItems.length + catIndex) * 60, withTiming(1, { duration: 400 }));
+								scale.value = withDelay((primaryMenuItems.length + catIndex) * 60, withSpring(1, {
+									damping: 15,
+									stiffness: 120,
+								}));
+							}, []);
+
+							const animatedStyle = useAnimatedStyle(() => ({
+								transform: [
+									{ translateX: translateX.value },
+									{ scale: scale.value * pressScale.value },
+								],
+								opacity: opacity.value,
+							}));
+
+							const handlePressIn = () => {
+								pressScale.value = withSpring(0.96, {
+									damping: 15,
+									stiffness: 300,
+								});
+							};
+
+							const handlePressOut = () => {
+								pressScale.value = withSpring(1, {
+									damping: 15,
+									stiffness: 300,
+								});
+							};
+
+							const handleCategoryPress = () => {
+								onClosePress();
+								navigate({
+									screenName: Route.ProductList,
+									params: {
+										categoryId: cat.id,
+										categoryName: cat.category_name,
+									},
+								});
+							};
+
+							return (
+								<Animated.View style={[animatedStyle, { width: '100%' }]}>
+									<Box 
+										marginBottom="m"
+										paddingLeft="xl"
+										paddingRight="m"
+										height={52}
+										justifyContent="center"
+										borderRadius={12}
+										width="100%"
+										style={{
+											backgroundColor: 'white',
+											elevation: 3,
+											shadowColor: '#000',
+											shadowOffset: { width: 0, height: 2 },
+											shadowOpacity: 0.12,
+											shadowRadius: 4,
+											borderWidth: 1,
+											borderColor: '#F0F0F0',
+											overflow: 'hidden',
+										}}
+									>
+										<Pressable
+											onPress={handleCategoryPress}
+											onPressIn={handlePressIn}
+											onPressOut={handlePressOut}
+											style={{
+												flexDirection: 'row',
+												alignItems: 'center',
+												width: '100%',
+												height: '100%',
+												position: 'relative',
+												zIndex: 1,
+											}}
+										>
+											<Text 
+												fontFamily={fonts.medium} 
+												fontSize={15} 
+												color="black"
+											>
+												{cat.category_name}
+											</Text>
+											{cat.products_count !== undefined && (
+												<Text 
+													fontFamily={fonts.regular} 
+													fontSize={12} 
+													color="gray"
+													marginLeft="s"
+												>
+													({cat.products_count})
+												</Text>
+											)}
+										</Pressable>
+									</Box>
+								</Animated.View>
+							);
+						};
+
+						return <CategoryItem key={`category-${category.id}`} cat={category} catIndex={index} />;
+					})
+				) : (
+					<Box paddingLeft="xl" paddingRight="m" paddingVertical="m">
+						<Text fontSize={14} fontFamily={fonts.regular} color="gray">
+							No categories available
+						</Text>
+					</Box>
+				)}
 			</Box>
 
 			{/* Logout Button at Bottom */}

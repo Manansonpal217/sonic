@@ -6,6 +6,9 @@ export interface CartItem {
 	cart_quantity: number;
 	cart_status: boolean;
 	product_image?: string | null;
+	cart_product_name?: string;
+	cart_product_price?: number;
+	cart_product_image?: string | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -47,4 +50,3 @@ export interface ClearCartApiParams {
 export interface ClearCartApiResponse {
 	message: string;
 }
-

@@ -22,16 +22,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCreateProduct, useProducts } from '@/lib/hooks/useProducts';
-import { ArrowLeft, Upload } from 'lucide-react';
+import { useCreateProduct } from '@/lib/hooks/useProducts';
+import { useCategories } from '@/lib/hooks/useCategories';
+import { useCategoryFields } from '@/lib/hooks/useCategoryFields';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
+import apiClient from '@/lib/api/client';
+import { getFullUrl, API_ENDPOINTS } from '@/lib/api/endpoints';
+import { toast } from 'sonner';
 
 const productSchema = z.object({
   product_name: z.string().min(1, 'Product name is required'),
   product_description: z.string().optional(),
   product_price: z.string().min(1, 'Price is required'),
+  product_category: z.string().optional(),
   product_is_parent: z.boolean().optional(),
   product_parent_id: z.string().optional(),
   product_status: z.boolean().optional(),
@@ -42,9 +48,15 @@ type ProductFormData = z.infer<typeof productSchema>;
 export default function NewProductPage() {
   const router = useRouter();
   const createProduct = useCreateProduct();
-  const { data: productsData } = useProducts({ product_is_parent: true });
+  const { data: categoriesData } = useCategories({ category_status: true });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, string>>({});
+
+  const { data: categoryFieldsData } = useCategoryFields({
+    category_id: selectedCategory ? parseInt(selectedCategory) : undefined,
+  });
 
   const {
     register,
@@ -57,10 +69,9 @@ export default function NewProductPage() {
     defaultValues: {
       product_status: true,
       product_is_parent: false,
+      product_parent_id: undefined,
     },
   });
-
-  const isParent = watch('product_is_parent');
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -74,16 +85,187 @@ export default function NewProductPage() {
     }
   };
 
+  const handleCategoryChange = (value: string) => {
+    const categoryValue = value || '';
+    setSelectedCategory(categoryValue);
+    setValue('product_category', categoryValue);
+    setDynamicFieldValues({}); // Reset dynamic field values
+  };
+
+  const handleDynamicFieldChange = (fieldId: number, value: string) => {
+    setDynamicFieldValues(prev => ({
+      ...prev,
+      [fieldId]: value,
+    }));
+  };
+
+  const validateDynamicFields = () => {
+    const requiredFields = categoryFieldsData?.results?.filter(f => f.is_required) || [];
+    for (const field of requiredFields) {
+      if (!dynamicFieldValues[field.id] || dynamicFieldValues[field.id].trim() === '') {
+        toast.error(`${field.field_label} is required`);
+        return false;
+      }
+    }
+    return true;
+  };
+
   const onSubmit = async (data: ProductFormData) => {
     try {
-      await createProduct.mutateAsync({
-        ...data,
+      // Validate dynamic fields
+      if (selectedCategory && !validateDynamicFields()) {
+        return;
+      }
+
+      // Create product
+      const product = await createProduct.mutateAsync({
+        product_name: data.product_name,
+        product_description: data.product_description,
+        product_price: data.product_price,
         product_image: imageFile,
-        product_parent_id: data.product_parent_id ? parseInt(data.product_parent_id) : null,
+        product_category: data.product_category ? parseInt(data.product_category) : null,
+        product_is_parent: false,
+        product_parent_id: null,
+        product_status: data.product_status,
       });
+
+      // Save dynamic field values
+      if (selectedCategory && categoryFieldsData?.results && categoryFieldsData.results.length > 0) {
+        const fieldValues = categoryFieldsData.results.map(field => ({
+          category_field: field.id,
+          field_value: dynamicFieldValues[field.id] || '',
+        })).filter(fv => fv.field_value !== '');
+
+        if (fieldValues.length > 0) {
+          await apiClient.post(getFullUrl(API_ENDPOINTS.productFieldValuesBulkCreate), {
+            product_id: product.id,
+            field_values: fieldValues,
+          });
+        }
+      }
+
+      toast.success('Product created successfully');
       router.push('/products');
     } catch (error) {
-      // Error is handled by the mutation
+      toast.error('Failed to create product');
+    }
+  };
+
+  const renderDynamicField = (field: any) => {
+    const value = dynamicFieldValues[field.id] || '';
+
+    switch (field.field_type) {
+      case 'text':
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={`field_${field.id}`}>
+              {field.field_label} {field.is_required && '*'}
+            </Label>
+            <Input
+              id={`field_${field.id}`}
+              value={value}
+              onChange={(e) => handleDynamicFieldChange(field.id, e.target.value)}
+              placeholder={field.placeholder || ''}
+              disabled={isSubmitting}
+            />
+            {field.help_text && (
+              <p className="text-sm text-muted-foreground">{field.help_text}</p>
+            )}
+          </div>
+        );
+
+      case 'textarea':
+        return (
+          <div key={field.id} className="space-y-2 md:col-span-2">
+            <Label htmlFor={`field_${field.id}`}>
+              {field.field_label} {field.is_required && '*'}
+            </Label>
+            <Textarea
+              id={`field_${field.id}`}
+              value={value}
+              onChange={(e) => handleDynamicFieldChange(field.id, e.target.value)}
+              placeholder={field.placeholder || ''}
+              disabled={isSubmitting}
+              rows={3}
+            />
+            {field.help_text && (
+              <p className="text-sm text-muted-foreground">{field.help_text}</p>
+            )}
+          </div>
+        );
+
+      case 'number':
+      case 'decimal':
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={`field_${field.id}`}>
+              {field.field_label} {field.is_required && '*'}
+            </Label>
+            <Input
+              id={`field_${field.id}`}
+              type="number"
+              step={field.field_type === 'decimal' ? '0.01' : '1'}
+              value={value}
+              onChange={(e) => handleDynamicFieldChange(field.id, e.target.value)}
+              placeholder={field.placeholder || ''}
+              disabled={isSubmitting}
+            />
+            {field.help_text && (
+              <p className="text-sm text-muted-foreground">{field.help_text}</p>
+            )}
+          </div>
+        );
+
+      case 'select':
+        const options = field.field_options ? JSON.parse(field.field_options) : [];
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={`field_${field.id}`}>
+              {field.field_label} {field.is_required && '*'}
+            </Label>
+            <Select
+              value={value}
+              onValueChange={(val) => handleDynamicFieldChange(field.id, val)}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={field.placeholder || 'Select...'} />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((opt: string, idx: number) => (
+                  <SelectItem key={idx} value={opt}>
+                    {opt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {field.help_text && (
+              <p className="text-sm text-muted-foreground">{field.help_text}</p>
+            )}
+          </div>
+        );
+
+      case 'boolean':
+        return (
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id={`field_${field.id}`}
+                checked={value === 'true'}
+                onCheckedChange={(checked) => handleDynamicFieldChange(field.id, String(checked))}
+              />
+              <Label htmlFor={`field_${field.id}`}>
+                {field.field_label} {field.is_required && '*'}
+              </Label>
+            </div>
+            {field.help_text && (
+              <p className="text-sm text-muted-foreground">{field.help_text}</p>
+            )}
+          </div>
+        );
+
+      default:
+        return null;
     }
   };
 
@@ -109,6 +291,26 @@ export default function NewProductPage() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="product_category">Category</Label>
+                <Select
+                  value={selectedCategory || undefined}
+                  onValueChange={handleCategoryChange}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoriesData?.results?.map((category) => (
+                      <SelectItem key={category.id} value={String(category.id)}>
+                        {category.category_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="product_name">Product Name *</Label>
                 <Input
@@ -165,37 +367,14 @@ export default function NewProductPage() {
                 )}
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="product_is_parent"
-                    checked={isParent}
-                    onCheckedChange={(checked) => setValue('product_is_parent', checked as boolean)}
-                  />
-                  <Label htmlFor="product_is_parent">Is Parent Product</Label>
-                </div>
-              </div>
-
-              {!isParent && (
-                <div className="space-y-2">
-                  <Label htmlFor="product_parent_id">Parent Product</Label>
-                  <Select
-                    onValueChange={(value) => setValue('product_parent_id', value)}
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select parent product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {productsData?.results?.map((product) => (
-                        <SelectItem key={product.id} value={String(product.id)}>
-                          {product.product_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Dynamic Fields */}
+              {selectedCategory && categoryFieldsData?.results && categoryFieldsData.results.length > 0 && (
+                <>
+                  <div className="md:col-span-2 border-t pt-4">
+                    <h3 className="text-lg font-semibold mb-4">Additional Fields</h3>
+                  </div>
+                  {categoryFieldsData.results.map(field => renderDynamicField(field))}
+                </>
               )}
 
               <div className="space-y-2 md:col-span-2">
@@ -229,4 +408,3 @@ export default function NewProductPage() {
     </div>
   );
 }
-

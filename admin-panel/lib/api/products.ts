@@ -33,6 +33,9 @@ export const productsApi = {
     formData.append('product_price', data.product_price);
     if (data.product_image) formData.append('product_image', data.product_image);
     if (data.product_form_response) formData.append('product_form_response', data.product_form_response);
+    if (data.product_category !== undefined && data.product_category !== null) {
+      formData.append('product_category', String(data.product_category));
+    }
     formData.append('product_is_parent', String(data.product_is_parent ?? false));
     if (data.product_parent_id) formData.append('product_parent_id', String(data.product_parent_id));
     formData.append('product_status', String(data.product_status ?? true));
@@ -56,6 +59,9 @@ export const productsApi = {
     if (data.product_price) formData.append('product_price', data.product_price);
     if (data.product_image) formData.append('product_image', data.product_image);
     if (data.product_form_response !== undefined) formData.append('product_form_response', data.product_form_response || '');
+    if (data.product_category !== undefined) {
+      formData.append('product_category', data.product_category !== null ? String(data.product_category) : '');
+    }
     if (data.product_is_parent !== undefined) formData.append('product_is_parent', String(data.product_is_parent));
     if (data.product_parent_id !== undefined) formData.append('product_parent_id', data.product_parent_id ? String(data.product_parent_id) : '');
     if (data.product_status !== undefined) formData.append('product_status', String(data.product_status));
@@ -89,4 +95,5 @@ export const productsApi = {
     });
   },
 };
+
 

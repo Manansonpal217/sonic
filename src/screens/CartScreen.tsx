@@ -4,7 +4,7 @@ import { observer } from 'mobx-react-lite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Screen, StatusBarType, Pressable } from '../components';
 import { authStore } from '../stores/AuthStore';
-import { goBack, Route, reset } from '../navigation/AppNavigation';
+import { goBack, Route, reset, navigate } from '../navigation/AppNavigation';
 import { fonts } from '../style';
 import { Image } from '../components/Image';
 import { cartFactory } from '../factory/CartFactory';
@@ -24,20 +24,36 @@ export const CartScreen: React.FC = observer(() => {
 	const loadCartItems = async () => {
 		try {
 			setIsLoading(true);
+			
+			// Check if cartFactory is available
+			if (!cartFactory) {
+				console.error('CartFactory is not initialized');
+				setCartItems([]);
+				return;
+			}
+
 			const response = await cartFactory.getCartListApi();
 			if (response.isSuccess && response.data) {
+				// Handle null/undefined results
 				setCartItems(response.data.results || []);
 			} else {
 				// Don't show error if it's just an empty cart or user not found
-				if (response.error && !response.error.includes('User ID not found')) {
-					showErrorMessage(response.error || 'Failed to load cart items');
+				if (response.error && 
+					!response.error.includes('User ID not found') && 
+					!response.error.includes('User not logged in') &&
+					!response.error.includes('empty')) {
+					// Only show error for actual errors, not empty cart
+					console.warn('Cart loading warning:', response.error);
 				}
 				// Set empty array if no data
 				setCartItems([]);
 			}
 		} catch (error: any) {
 			console.error('Cart loading error:', error);
-			showErrorMessage(error?.message || 'Failed to load cart items');
+			// Don't show error alert for empty cart - just set empty array
+			if (error?.message && !error.message.includes('empty')) {
+				showErrorMessage(error?.message || 'Failed to load cart items');
+			}
 			setCartItems([]);
 		} finally {
 			setIsLoading(false);
@@ -89,6 +105,12 @@ export const CartScreen: React.FC = observer(() => {
 			return;
 		}
 
+		// Check if cartFactory is available
+		if (!cartFactory) {
+			showErrorMessage('Cart service is not available');
+			return;
+		}
+
 		// Optimistic update - update UI immediately
 		setCartItems(prevItems => 
 			prevItems.map(item => 
@@ -137,6 +159,12 @@ export const CartScreen: React.FC = observer(() => {
 	};
 
 	const handleDeleteItem = async (cartId: number) => {
+		// Check if cartFactory is available
+		if (!cartFactory) {
+			showErrorMessage('Cart service is not available');
+			return;
+		}
+
 		// Optimistic update - remove from UI immediately
 		const itemToDelete = cartItems.find(item => item.id === cartId);
 		setCartItems(prevItems => prevItems.filter(item => item.id !== cartId));
@@ -163,11 +191,33 @@ export const CartScreen: React.FC = observer(() => {
 
 	const handleCheckout = async () => {
 		try {
-			// Navigate to checkout screen or process checkout
-			// For now, show a message that checkout functionality will be implemented
-			showSuccessMessage('Proceeding to checkout...');
-			// TODO: Navigate to checkout screen or call checkout API
-			// Example: navigation.navigate('Checkout');
+			if (cartItems.length === 0) {
+				showErrorMessage('Your cart is empty');
+				return;
+			}
+			// Navigate to checkout screen with all cart items
+			navigate({
+				screenName: Route.Checkout,
+				params: {
+					cartItems: cartItems,
+					isSingleItemCheckout: false,
+				},
+			});
+		} catch (error: any) {
+			showErrorMessage(error?.message || 'Failed to proceed to checkout');
+		}
+	};
+
+	const handleProductCheckout = async (item: CartItem) => {
+		try {
+			// Navigate to checkout screen with single cart item
+			navigate({
+				screenName: Route.Checkout,
+				params: {
+					cartItems: [item],
+					isSingleItemCheckout: true,
+				},
+			});
 		} catch (error: any) {
 			showErrorMessage(error?.message || 'Failed to proceed to checkout');
 		}
@@ -285,16 +335,18 @@ export const CartScreen: React.FC = observer(() => {
 											justifyContent="center"
 											alignItems="center"
 										>
-											{item.product_image ? (
+											{item.cart_product_image || item.product_image ? (
 												<Image
-													source={{ uri: item.product_image }}
+													source={{ 
+														uri: item.cart_product_image || item.product_image || ''
+													}}
 													style={{ width: 80, height: 80 }}
 													resizeMode="cover"
 												/>
 											) : (
 												<Image
 													source={Images.logo}
-													style={{ width: 80, height: 80 }}
+													style={{ width: 50, height: 50, opacity: 0.3 }}
 													resizeMode="contain"
 												/>
 											)}
@@ -306,15 +358,9 @@ export const CartScreen: React.FC = observer(() => {
 												fontFamily={fonts.bold}
 												color="black"
 												marginBottom="xs"
+												numberOfLines={2}
 											>
-												Product #{item.id}
-											</Text>
-											<Text
-												fontSize={14}
-												fontFamily={fonts.regular}
-												color="gray"
-											>
-												{item.cart_product}
+												{item.cart_product_name || 'Product'}
 											</Text>
 										</Box>
 
@@ -398,6 +444,28 @@ export const CartScreen: React.FC = observer(() => {
 											</Pressable>
 										</Box>
 									</Box>
+
+									{/* Product-wise Checkout Button */}
+									<Box marginTop="s">
+										<Pressable onPress={() => handleProductCheckout(item)}>
+											<Box
+												backgroundColor="red3"
+												borderRadius={8}
+												paddingVertical="xs"
+												paddingHorizontal="s"
+												alignItems="center"
+												justifyContent="center"
+											>
+												<Text
+													fontSize={12}
+													fontFamily={fonts.semiBold}
+													color="white"
+												>
+													Checkout This Item
+												</Text>
+											</Box>
+										</Pressable>
+									</Box>
 								</Box>
 							))}
 						</>
@@ -480,4 +548,3 @@ export const CartScreen: React.FC = observer(() => {
 		</Screen>
 	);
 });
-

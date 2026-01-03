@@ -35,6 +35,8 @@ import { fonts } from '../../style';
 import { authStore } from '../../stores/AuthStore';
 import { navigate, Route } from '../../navigation/AppNavigation';
 import { cartFactory } from '../../factory/CartFactory';
+import { getHttp } from '../../core';
+import { BASE_URL } from '../../api/EndPoint';
 
 export interface HeaderProps {
 	onMenuPress: () => void;
@@ -44,6 +46,8 @@ export interface HeaderProps {
 	label: string;
 	onSearch: (text: string) => void;
 	search: string;
+	refreshNotificationCount?: React.MutableRefObject<(() => void) | null>;
+	refreshCartCount?: React.MutableRefObject<(() => void) | null>;
 }
 
 const AnimatedButton: React.FC<{
@@ -166,6 +170,8 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 	label,
 	search,
 	onSearch,
+	refreshNotificationCount,
+	refreshCartCount,
 }: HeaderProps) => {
 	const insets = useSafeAreaInsets();
 	const topPadding = Math.max(insets.top, 44); // Ensure at least 44px for Dynamic Island
@@ -184,33 +190,98 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 
 	const user = authStore?.loginData?.user;
 	const [cartCount, setCartCount] = React.useState(0);
+	const [notificationCount, setNotificationCount] = React.useState(0);
 	const headerOpacity = useSharedValue(0);
 	const headerTranslateY = useSharedValue(-20);
 
-	// Fetch cart count only when component mounts or user login status changes
-	React.useEffect(() => {
-		const fetchCartCount = async () => {
-			if (authStore.isLogin()) {
-				try {
-					const response = await cartFactory.getCartListApi();
-					if (response.isSuccess && response.data) {
-						const totalItems = response.data.results?.reduce((sum, item) => sum + item.cart_quantity, 0) || 0;
-						setCartCount(totalItems);
-					} else {
-						setCartCount(0);
-					}
-				} catch (error) {
-					console.error('Failed to fetch cart count:', error);
+	// Fetch cart count function (can be called externally)
+	const fetchCartCount = React.useCallback(async () => {
+		if (authStore.isLogin()) {
+			try {
+				// Check if cartFactory is available
+				if (!cartFactory) {
+					console.warn('CartFactory is not initialized');
+					setCartCount(0);
+					return;
+				}
+
+				const response = await cartFactory.getCartListApi();
+				if (response.isSuccess && response.data) {
+					// Handle null/undefined results safely
+					const results = response.data.results || [];
+					const totalItems = results.reduce((sum, item) => {
+						return sum + (item?.cart_quantity || 0);
+					}, 0);
+					setCartCount(totalItems);
+				} else {
 					setCartCount(0);
 				}
-			} else {
+			} catch (error) {
+				console.error('Failed to fetch cart count:', error);
 				setCartCount(0);
 			}
-		};
-
-		fetchCartCount();
-		// Only fetch on mount and when login status changes, not constantly
+		} else {
+			setCartCount(0);
+		}
 	}, [authStore.isLogin()]);
+
+	// Expose refresh function via ref callback
+	React.useEffect(() => {
+		if (refreshCartCount) {
+			refreshCartCount.current = fetchCartCount;
+		}
+	}, [fetchCartCount, refreshCartCount]);
+
+	// Fetch cart count on mount and when login status changes
+	React.useEffect(() => {
+		fetchCartCount();
+	}, [fetchCartCount]);
+
+	// Fetch notification count function (can be called externally)
+	const fetchNotificationCount = React.useCallback(async () => {
+		if (!authStore.isLogin()) {
+			setNotificationCount(0);
+			return;
+		}
+
+		try {
+			const http = getHttp();
+			// Use full URL like cart endpoints
+			const notificationsUrl = `${BASE_URL}/notifications/?read=false&page_size=50`;
+			const result = await http.get<any>(notificationsUrl);
+
+			if (result && result.isSuccess && result.data) {
+				const notifications = result.data.results || result.data || [];
+				const unreadCount = notifications.filter((n: any) => !n.read || !n.notification_read).length || 0;
+				setNotificationCount(unreadCount);
+			} else {
+				setNotificationCount(0);
+			}
+		} catch (error: any) {
+			// Silently handle errors - don't spam console
+			if (error?.message && !error.message.includes('timeout') && !error.message.includes('exceeded')) {
+				console.warn('Notification fetch warning:', error?.message);
+			}
+			setNotificationCount(0);
+		}
+	}, [authStore.isLogin()]);
+
+	// Expose refresh function via ref callback
+	React.useEffect(() => {
+		if (refreshNotificationCount) {
+			// Store the function reference so parent can call it
+			refreshNotificationCount.current = fetchNotificationCount;
+		}
+	}, [fetchNotificationCount, refreshNotificationCount]);
+
+	// Fetch notification count on mount and periodically
+	React.useEffect(() => {
+		fetchNotificationCount();
+		// Refresh notification count periodically (every 60 seconds instead of 30 to reduce load)
+		const interval = setInterval(fetchNotificationCount, 60000);
+		
+		return () => clearInterval(interval);
+	}, [fetchNotificationCount]);
 
 	React.useEffect(() => {
 		headerOpacity.value = withTiming(1, { duration: 400 });
@@ -290,12 +361,12 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 								borderRadius={20}
 								backgroundColor="gray5"
 								marginEnd="s"
-								position="relative"
+								style={{ position: 'relative', overflow: 'visible' }}
 							>
 								<Image source={Images.notification} height={20} width={20} />
 								<AnimatedBadge 
-									count={0} 
-									visible={false}
+									count={notificationCount} 
+									visible={notificationCount > 0}
 								/>
 							</Box>
 						</AnimatedButton>

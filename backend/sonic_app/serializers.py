@@ -1,10 +1,72 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from .models import (
-    User, Product, Order, CustomizeOrders, AddToCart,
+    Category, CategoryField, User, Product, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
     Banners, CMS, NotificationType, NotificationTable,
     OrderEmails, Session
 )
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """Category serializer for jewelry categories"""
+    products_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = [
+            'id', 'category_name', 'category_description', 'category_image',
+            'category_status', 'display_order', 'products_count',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_products_count(self, obj):
+        """Get count of active products in this category"""
+        return obj.products.filter(is_delete=False, product_status=True).count()
+
+    def to_representation(self, instance):
+        """Convert relative image URLs to absolute URLs"""
+        representation = super().to_representation(instance)
+        if representation.get('category_image'):
+            request = self.context.get('request')
+            if request:
+                representation['category_image'] = request.build_absolute_uri(representation['category_image'])
+            else:
+                from django.conf import settings
+                image_url = representation['category_image']
+                if image_url and not image_url.startswith('http'):
+                    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                    representation['category_image'] = f"{base_url.rstrip('/')}{image_url}"
+        return representation
+
+
+class CategoryFieldSerializer(serializers.ModelSerializer):
+    """Category field serializer for dynamic fields"""
+    category_name = serializers.CharField(source='category.category_name', read_only=True)
+
+    class Meta:
+        model = CategoryField
+        fields = [
+            'id', 'category', 'category_name', 'field_name', 'field_label',
+            'field_type', 'field_options', 'is_required', 'display_order',
+            'placeholder', 'help_text', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class ProductFieldValueSerializer(serializers.ModelSerializer):
+    """Product field value serializer"""
+    field_name = serializers.CharField(source='category_field.field_name', read_only=True)
+    field_label = serializers.CharField(source='category_field.field_label', read_only=True)
+    field_type = serializers.CharField(source='category_field.field_type', read_only=True)
+
+    class Meta:
+        model = ProductFieldValue
+        fields = [
+            'id', 'product', 'category_field', 'field_name', 'field_label',
+            'field_type', 'field_value', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -15,7 +77,6 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'password', 'first_name', 'last_name',
-            'phone_number', 'company_name', 'gst', 'address',
             'user_status', 'is_active', 'is_staff', 'is_superuser',
             'date_joined', 'last_login', 'created_at', 'updated_at'
         ]
@@ -59,122 +120,97 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return user
 
 
-class ClientLoginSerializer(serializers.Serializer):
-    """Client login serializer"""
-    user_email = serializers.EmailField(required=True)
-    user_password = serializers.CharField(write_only=True, required=True)
-    remember_me = serializers.BooleanField(required=False, default=False)
-
-    def validate(self, attrs):
-        email = attrs.get('user_email')
-        password = attrs.get('user_password')
-        
-        if email and password:
-            from django.contrib.auth import authenticate
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            
-            # Try to authenticate with email as username first
-            user = authenticate(username=email, password=password)
-            
-            # If that fails, try to find user by email and authenticate with username
-            if not user:
-                try:
-                    user_obj = User.objects.get(email=email)
-                    user = authenticate(username=user_obj.username, password=password)
-                except User.DoesNotExist:
-                    pass
-            
-            if not user:
-                raise serializers.ValidationError({"user_email": "Invalid email or password."})
-            if not user.is_active:
-                raise serializers.ValidationError({"user_email": "User account is disabled."})
-            attrs['user'] = user
-        return attrs
-
-
-class ClientRegistrationSerializer(serializers.Serializer):
-    """Client registration serializer that accepts frontend field names"""
-    user_name = serializers.CharField(required=True, max_length=255)
-    user_email = serializers.EmailField(required=True)
-    user_phone_number = serializers.CharField(required=False, max_length=20, allow_blank=True)
-    user_company_name = serializers.CharField(required=False, max_length=255, allow_blank=True)
-    user_gst = serializers.CharField(required=False, max_length=50, allow_blank=True)
-    user_address = serializers.CharField(required=False, allow_blank=True)
-    user_password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-    confirm_password = serializers.CharField(write_only=True, required=True)
-
-    def validate(self, attrs):
-        if attrs['user_password'] != attrs['confirm_password']:
-            raise serializers.ValidationError({"user_password": "Password fields didn't match."})
-        return attrs
-
-    def create(self, validated_data):
-        # Map frontend field names to model fields
-        password = validated_data.pop('user_password')
-        validated_data.pop('confirm_password')
-        
-        # Extract user_name and split into first_name and last_name
-        user_name = validated_data.pop('user_name', '')
-        name_parts = user_name.strip().split(' ', 1)
-        first_name = name_parts[0] if name_parts else ''
-        last_name = name_parts[1] if len(name_parts) > 1 else ''
-        
-        # Get email before popping
-        user_email = validated_data.pop('user_email')
-        
-        # Map frontend fields to model fields
-        user_data = {
-            'username': user_email,  # Use email as username
-            'email': user_email,
-            'first_name': first_name,
-            'last_name': last_name,
-            'phone_number': validated_data.pop('user_phone_number', None) or None,
-            'company_name': validated_data.pop('user_company_name', None) or None,
-            'gst': validated_data.pop('user_gst', None) or None,
-            'address': validated_data.pop('user_address', None) or None,
-        }
-        
-        user = User.objects.create_user(password=password, **user_data)
-        return user
-
-
 class ProductSerializer(serializers.ModelSerializer):
     """Product serializer"""
     product_parent_name = serializers.CharField(source='product_parent_id.product_name', read_only=True)
+    product_category_name = serializers.CharField(source='product_category.category_name', read_only=True)
     child_products = serializers.SerializerMethodField()
+    field_values = ProductFieldValueSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
         fields = [
             'id', 'product_name', 'product_description', 'product_price',
-            'product_image', 'product_form_response', 'product_is_parent',
+            'product_image', 'product_form_response', 'product_category',
+            'product_category_name', 'product_is_parent',
             'product_parent_id', 'product_parent_name', 'product_status',
-            'created_at', 'updated_at', 'child_products'
+            'created_at', 'updated_at', 'child_products', 'field_values'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def to_representation(self, instance):
+        """Convert relative image URLs to absolute URLs"""
+        representation = super().to_representation(instance)
+        if representation.get('product_image'):
+            request = self.context.get('request')
+            if request:
+                representation['product_image'] = request.build_absolute_uri(representation['product_image'])
+            else:
+                # Fallback: construct URL manually if request is not available
+                from django.conf import settings
+                image_url = representation['product_image']
+                if image_url and not image_url.startswith('http'):
+                    # Construct absolute URL from relative URL
+                    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                    representation['product_image'] = f"{base_url.rstrip('/')}{image_url}"
+        return representation
 
     def get_child_products(self, obj):
         if obj.product_is_parent:
             children = Product.objects.filter(product_parent_id=obj, is_delete=False)
-            return ProductSerializer(children, many=True).data
+            return ProductSerializer(children, many=True, context=self.context).data
         return []
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    """Order item serializer"""
+    product_name = serializers.CharField(source='product.product_name', read_only=True)
+    product_image = serializers.ImageField(source='product.product_image', read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = [
+            'id', 'order', 'product', 'product_name', 'product_image',
+            'quantity', 'price', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def to_representation(self, instance):
+        """Convert relative image URLs to absolute URLs"""
+        representation = super().to_representation(instance)
+        if representation.get('product_image'):
+            request = self.context.get('request')
+            if request:
+                representation['product_image'] = request.build_absolute_uri(representation['product_image'])
+            else:
+                from django.conf import settings
+                image_url = representation['product_image']
+                if image_url and not image_url.startswith('http'):
+                    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                    representation['product_image'] = f"{base_url.rstrip('/')}{image_url}"
+        return representation
 
 
 class OrderSerializer(serializers.ModelSerializer):
     """Order serializer"""
     order_user_username = serializers.CharField(source='order_user.username', read_only=True)
     order_product_name = serializers.CharField(source='order_product.product_name', read_only=True)
+    order_items = OrderItemSerializer(many=True, read_only=True)
+    items_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
             'id', 'order_user', 'order_user_username', 'order_product',
             'order_product_name', 'order_quantity', 'order_price',
-            'order_status', 'order_date', 'order_notes',
-            'created_at', 'updated_at'
+            'order_total_price', 'order_status', 'order_date', 'order_notes',
+            'order_items', 'items_count', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_items_count(self, obj):
+        """Get count of items in this order"""
+        return obj.order_items.count()
 
 
 class CustomizeOrdersSerializer(serializers.ModelSerializer):
@@ -191,36 +227,53 @@ class CustomizeOrdersSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
+    def to_representation(self, instance):
+        """Convert relative image URLs to absolute URLs"""
+        representation = super().to_representation(instance)
+        if representation.get('order_image'):
+            request = self.context.get('request')
+            if request:
+                representation['order_image'] = request.build_absolute_uri(representation['order_image'])
+            else:
+                from django.conf import settings
+                image_url = representation['order_image']
+                if image_url and not image_url.startswith('http'):
+                    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                    representation['order_image'] = f"{base_url.rstrip('/')}{image_url}"
+        return representation
+
 
 class AddToCartSerializer(serializers.ModelSerializer):
     """Add to Cart serializer"""
     cart_user_username = serializers.CharField(source='cart_user.username', read_only=True)
-    product_image = serializers.SerializerMethodField()
+    cart_product_name = serializers.CharField(source='cart_product.product_name', read_only=True)
+    cart_product_price = serializers.DecimalField(source='cart_product.product_price', max_digits=10, decimal_places=2, read_only=True)
+    cart_product_image = serializers.ImageField(source='cart_product.product_image', read_only=True)
 
     class Meta:
         model = AddToCart
         fields = [
             'id', 'cart_user', 'cart_user_username', 'cart_product',
-            'cart_quantity', 'cart_status', 'product_image',
+            'cart_product_name', 'cart_product_price', 'cart_product_image',
+            'cart_quantity', 'cart_status',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
-    def get_product_image(self, obj):
-        """Try to get product image from cart_product field"""
-        try:
-            # If cart_product is a product ID (numeric string), try to get the product
-            if obj.cart_product and obj.cart_product.isdigit():
-                from .models import Product
-                product = Product.objects.filter(id=int(obj.cart_product), is_delete=False).first()
-                if product and product.product_image:
-                    request = self.context.get('request')
-                    if request:
-                        return request.build_absolute_uri(product.product_image.url)
-                    return product.product_image.url
-        except (ValueError, AttributeError):
-            pass
-        return None
+    def to_representation(self, instance):
+        """Convert relative image URLs to absolute URLs"""
+        representation = super().to_representation(instance)
+        if representation.get('cart_product_image'):
+            request = self.context.get('request')
+            if request:
+                representation['cart_product_image'] = request.build_absolute_uri(representation['cart_product_image'])
+            else:
+                from django.conf import settings
+                image_url = representation['cart_product_image']
+                if image_url and not image_url.startswith('http'):
+                    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                    representation['cart_product_image'] = f"{base_url.rstrip('/')}{image_url}"
+        return representation
 
 
 class BannersSerializer(serializers.ModelSerializer):
@@ -235,6 +288,21 @@ class BannersSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def to_representation(self, instance):
+        """Convert relative image URLs to absolute URLs"""
+        representation = super().to_representation(instance)
+        if representation.get('banner_image'):
+            request = self.context.get('request')
+            if request:
+                representation['banner_image'] = request.build_absolute_uri(representation['banner_image'])
+            else:
+                from django.conf import settings
+                image_url = representation['banner_image']
+                if image_url and not image_url.startswith('http'):
+                    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                    representation['banner_image'] = f"{base_url.rstrip('/')}{image_url}"
+        return representation
 
 
 class CMSSerializer(serializers.ModelSerializer):
@@ -301,3 +369,4 @@ class SessionSerializer(serializers.ModelSerializer):
             'fcm_token', 'device_type', 'created_at', 'updated_at', 'expire_date'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+

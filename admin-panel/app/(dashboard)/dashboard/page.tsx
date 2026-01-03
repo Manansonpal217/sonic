@@ -5,6 +5,8 @@ import { Users, Package, ShoppingCart, DollarSign } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { usersApi, productsApi, ordersApi } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatCurrency } from '@/lib/utils/formatters';
+import { useMemo } from 'react';
 
 export default function DashboardPage() {
   const { data: usersData, isLoading: usersLoading } = useQuery({
@@ -21,6 +23,28 @@ export default function DashboardPage() {
     queryKey: ['orders', 'stats'],
     queryFn: () => ordersApi.list({ page_size: 1 }),
   });
+
+  // Fetch all orders to calculate revenue
+  const { data: allOrdersData, isLoading: allOrdersLoading } = useQuery({
+    queryKey: ['orders', 'revenue'],
+    queryFn: async () => {
+      // Fetch all orders with a large page size
+      const response = await ordersApi.list({ page_size: 10000 });
+      return response;
+    },
+  });
+
+  // Calculate total revenue from all orders
+  const totalRevenue = useMemo(() => {
+    if (!allOrdersData?.results) return 0;
+    
+    return allOrdersData.results.reduce((sum, order) => {
+      const price = parseFloat(
+        (order as any).order_total_price || order.order_price || '0'
+      );
+      return sum + (isNaN(price) ? 0 : price);
+    }, 0);
+  }, [allOrdersData]);
 
   const stats = [
     {
@@ -46,10 +70,11 @@ export default function DashboardPage() {
     },
     {
       title: 'Revenue',
-      value: '$0', // Calculate from orders
+      value: formatCurrency(totalRevenue),
       icon: DollarSign,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
+      isLoading: allOrdersLoading,
     },
   ];
 
@@ -63,7 +88,11 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
-          const isLoading = usersLoading || productsLoading || ordersLoading;
+          const isLoading = 
+            (stat.isLoading !== undefined ? stat.isLoading : false) ||
+            usersLoading || 
+            productsLoading || 
+            ordersLoading;
 
           return (
             <Card key={stat.title}>
@@ -94,4 +123,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
 

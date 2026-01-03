@@ -559,4 +559,3 @@ export const ProfileScreen: React.FC = observer(() => {
 	</Screen>
 	);
 });
-

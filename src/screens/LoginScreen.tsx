@@ -41,7 +41,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 	const [isShowPassword, setIsShowPassword] = useState(true);
 	const [keyboardStatus, setKeyboardStatus] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
-	const [rememberMe, setRememberMe] = useState(false);
 
 	// Animation refs
 	const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -58,17 +57,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 		const hideListener = Keyboard.addListener('keyboardDidHide', () => {
 			setKeyboardStatus(false);
 		});
-
-		// Load saved credentials if remember me was checked
-		const loadSavedCredentials = async () => {
-			const savedCredentials = await authStore.getSavedCredentials();
-			if (savedCredentials) {
-				setValue('email', savedCredentials.email);
-				setValue('password', savedCredentials.password);
-				setRememberMe(true);
-			}
-		};
-		loadSavedCredentials();
 
 		// Start entrance animations
 		Animated.parallel([
@@ -95,25 +83,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 			setTimeout(async () => {
 				setIsLoading(false);
 				showSuccessMessage('Login successful! Welcome back! 🎉');
-				// Store dummy login data with complete user object structure
+				// Store dummy login data
 				await authStore.setLoginData({
 					token: 'dummy_token',
 					user: {
-						id: 6, // Demo user ID from seed data
-						username: 'demo',
 						userName: 'Demo User',
 						userEmail: email,
-						email: email,
-						first_name: 'Demo',
-						last_name: 'User',
-						phone_number: '+919876543215',
-						company_name: 'Sonic Gold Store',
-						gst: 'GST27FFFFF0000F6Z0',
-						address: '100 Demo Street, Bangalore, Karnataka 560001',
-						user_status: true,
-						is_active: true,
 					},
-				}, rememberMe ? { email, password } : null);
+				});
 				// Navigate to dashboard
 				reset({ screenName: Route.Dashboard });
 			}, 1500);
@@ -121,11 +98,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 		}
 
 		// Regular API call
-		const response = await authFactory.loginApi(email, password, rememberMe);
+		const response = await authFactory.loginApi(email, password);
 		setIsLoading(false);
 		
 		if (response.isSuccess) {
 			showSuccessMessage('Login successful! Welcome back! 🎉');
+			// Store login data
+			if (response.data) {
+				await authStore.setLoginData(response.data);
+			}
 			// Navigate to dashboard
 			reset({ screenName: Route.Dashboard });
 		} else {
@@ -328,43 +309,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 						)}
 					/>
 
-					{/* Remember Me and Forgot Password Row */}
-					<View style={styles.rememberForgotRow}>
-						<TouchableOpacity
-							onPress={() => setRememberMe(!rememberMe)}
-							style={styles.rememberMeContainer}
-							activeOpacity={0.7}
+					{/* Forgot Password */}
+					<TouchableOpacity
+						onPress={handleForgotPasswordPress}
+						style={styles.forgotButton}
+					>
+						<Text
+							color="red3"
+							fontSize={14}
+							fontFamily={fonts.bold}
 						>
-							<View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-								{rememberMe && (
-									<Text fontSize={14} color="white" fontFamily={fonts.bold}>
-										✓
-									</Text>
-								)}
-							</View>
-							<Text
-								fontSize={14}
-								color="black"
-								fontFamily={fonts.regular}
-								marginLeft={8}
-							>
-								Remember Me
-							</Text>
-						</TouchableOpacity>
-
-						<TouchableOpacity
-							onPress={handleForgotPasswordPress}
-							style={styles.forgotButton}
-						>
-							<Text
-								color="red3"
-								fontSize={14}
-								fontFamily={fonts.bold}
-							>
-								Forgot Password?
-							</Text>
-						</TouchableOpacity>
-					</View>
+							Forgot Password?
+						</Text>
+					</TouchableOpacity>
 
 					{/* Login Button */}
 					<AnimatedButton
@@ -418,7 +375,7 @@ const styles = StyleSheet.create({
 	headerContainer: {
 		position: 'relative',
 		width: '100%',
-		marginBottom: 10,
+		marginBottom: 20,
 	},
 	headerImage: {
 		width: '100%',
@@ -449,39 +406,16 @@ const styles = StyleSheet.create({
 	},
 	welcomeContainer: {
 		paddingHorizontal: 24,
-		marginTop: -10,
 		marginBottom: 24,
 	},
 	formContainer: {
 		flex: 1,
 	},
-	rememberForgotRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-		paddingHorizontal: 24,
-		marginBottom: 16,
-		marginTop: -8,
-	},
-	rememberMeContainer: {
-		flexDirection: 'row',
-		alignItems: 'center',
-	},
-	checkbox: {
-		width: 20,
-		height: 20,
-		borderWidth: 2,
-		borderColor: '#842B25',
-		borderRadius: 4,
-		justifyContent: 'center',
-		alignItems: 'center',
-		backgroundColor: 'transparent',
-	},
-	checkboxChecked: {
-		backgroundColor: '#842B25',
-	},
 	forgotButton: {
 		alignSelf: 'flex-end',
+		marginRight: 24,
+		marginBottom: 16,
+		marginTop: -8,
 	},
 	signupContainer: {
 		paddingVertical: 24,

@@ -6,6 +6,18 @@ export const API_ENDPOINTS = {
   login: '/api/client-login',
   registration: '/api/client-registration',
   
+  // Categories
+  categories: '/api/categories/',
+  category: (id: number) => `/api/categories/${id}/`,
+  categoriesActive: '/api/categories/active/',
+  categoryProducts: (id: number) => `/api/categories/${id}/products/`,
+  categoriesSoftDelete: '/api/categories/soft_delete/',
+  
+  // Category Fields
+  categoryFields: '/api/category-fields/',
+  categoryField: (id: number) => `/api/category-fields/${id}/`,
+  categoryFieldsSoftDelete: '/api/category-fields/soft_delete/',
+  
   // Users
   users: '/api/users/',
   user: (id: number) => `/api/users/${id}/`,
@@ -16,11 +28,14 @@ export const API_ENDPOINTS = {
   product: (id: number) => `/api/products/${id}/`,
   productChildren: (id: number) => `/api/products/${id}/children/`,
   productsSoftDelete: '/api/products/soft_delete/',
+  productFieldValues: '/api/product-field-values/',
+  productFieldValuesBulkCreate: '/api/product-field-values/bulk_create/',
   
   // Orders
   orders: '/api/orders/',
   order: (id: number) => `/api/orders/${id}/`,
   ordersSoftDelete: '/api/orders/soft_delete/',
+  ordersCheckout: '/api/orders/checkout/',
   
   // Customize Orders
   customizeOrders: '/api/customize-orders/',
@@ -50,6 +65,7 @@ export const API_ENDPOINTS = {
   notification: (id: number) => `/api/notifications/${id}/`,
   notificationMarkRead: (id: number) => `/api/notifications/${id}/mark_read/`,
   notificationsMarkAllRead: '/api/notifications/mark_all_read/',
+  notificationsSend: '/api/notifications/send_notification/',
   
   // Order Emails
   orderEmails: '/api/order-emails/',
@@ -69,4 +85,5 @@ export const getFullUrl = (endpoint: string): string => {
   }
   return `${API_BASE_URL}${endpoint}`;
 };
+
 

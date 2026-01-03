@@ -1,15 +1,19 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    UserViewSet, ProductViewSet, OrderViewSet,
+    CategoryViewSet, CategoryFieldViewSet, UserViewSet, ProductViewSet,
+    ProductFieldValueViewSet, OrderViewSet,
     CustomizeOrdersViewSet, AddToCartViewSet, BannersViewSet,
     CMSViewSet, NotificationTypeViewSet, NotificationTableViewSet,
-    OrderEmailsViewSet, SessionViewSet, ClientRegistrationView, ClientLoginView
+    OrderEmailsViewSet, SessionViewSet, client_login
 )
 
 router = DefaultRouter()
+router.register(r'categories', CategoryViewSet, basename='category')
+router.register(r'category-fields', CategoryFieldViewSet, basename='category-field')
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'products', ProductViewSet, basename='product')
+router.register(r'product-field-values', ProductFieldValueViewSet, basename='product-field-value')
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'customize-orders', CustomizeOrdersViewSet, basename='customize-order')
 router.register(r'cart', AddToCartViewSet, basename='cart')
@@ -22,8 +26,6 @@ router.register(r'sessions', SessionViewSet, basename='session')
 
 urlpatterns = [
     path('', include(router.urls)),
-    # Client authentication endpoints
-    path('client-login', ClientLoginView.as_view(), name='client-login'),
-    path('client-registration', ClientRegistrationView.as_view(), name='client-registration'),
+    path('client-login', client_login, name='client-login'),
 ]
 

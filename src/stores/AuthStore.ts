@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import { Storage } from '../core/Storage';
 
 const STORAGE_KEY = '@auth_data';
@@ -27,17 +27,23 @@ class AuthStore {
 		try {
 			const data = await Storage.get<LoginData>(STORAGE_KEY);
 			if (data) {
-				this.loginData = data;
+				runInAction(() => {
+					this.loginData = data;
+				});
 			}
 		} catch (error) {
 			console.error('Error loading auth data:', error);
 		} finally {
-			this.isInitialized = true;
+			runInAction(() => {
+				this.isInitialized = true;
+			});
 		}
 	}
 
 	async setLoginData(data: LoginData, credentials: SavedCredentials | null = null) {
-		this.loginData = data;
+		runInAction(() => {
+			this.loginData = data;
+		});
 		await Storage.set(STORAGE_KEY, data);
 		// Also store token separately for HTTP client
 		await Storage.set('@auth_token', data.token);
@@ -52,7 +58,9 @@ class AuthStore {
 	}
 
 	async clearLoginData() {
-		this.loginData = null;
+		runInAction(() => {
+			this.loginData = null;
+		});
 		await Storage.remove(STORAGE_KEY);
 		await Storage.remove('@auth_token');
 		await Storage.remove(SAVED_CREDENTIALS_KEY);
@@ -78,7 +86,9 @@ class AuthStore {
 		if (token) {
 			const data = await Storage.get<LoginData>(STORAGE_KEY);
 			if (data) {
-				this.loginData = data;
+				runInAction(() => {
+					this.loginData = data;
+				});
 			}
 		}
 	}

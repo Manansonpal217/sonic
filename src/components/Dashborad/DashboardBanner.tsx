@@ -143,4 +143,3 @@ export const DashboardBanner: React.FC<DashboardBannerProps> = ({
 		</Animated.View>
 	);
 };
-

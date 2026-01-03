@@ -3,6 +3,34 @@ from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 
 
+class Category(models.Model):
+    """Product category model for jewelry types (Necklace, Rings, etc.)"""
+    category_name = models.CharField(max_length=255)
+    category_description = models.TextField(null=True, blank=True)
+    category_image = models.ImageField(upload_to='categories/', null=True, blank=True)
+    category_status = models.BooleanField(default=True)
+    display_order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_delete = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'sonic_app_category'
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
+        ordering = ['display_order', '-created_at']
+
+    def soft_delete(self):
+        """Soft delete the category"""
+        self.is_delete = True
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def __str__(self):
+        return self.category_name
+
+
 class User(AbstractUser):
     """Custom User model extending Django's AbstractUser"""
     user_status = models.BooleanField(default=True)
@@ -30,6 +58,52 @@ class User(AbstractUser):
         return self.username
 
 
+class CategoryField(models.Model):
+    """Dynamic field definitions for categories"""
+    FIELD_TYPE_CHOICES = [
+        ('text', 'Text'),
+        ('number', 'Number'),
+        ('decimal', 'Decimal'),
+        ('select', 'Select'),
+        ('boolean', 'Boolean'),
+        ('textarea', 'Text Area'),
+    ]
+
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name='fields'
+    )
+    field_name = models.CharField(max_length=255)
+    field_label = models.CharField(max_length=255)
+    field_type = models.CharField(max_length=50, choices=FIELD_TYPE_CHOICES, default='text')
+    field_options = models.TextField(null=True, blank=True, help_text='JSON array of options for select type')
+    is_required = models.BooleanField(default=False)
+    display_order = models.IntegerField(default=0)
+    placeholder = models.CharField(max_length=255, null=True, blank=True)
+    help_text = models.CharField(max_length=500, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_delete = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'sonic_app_category_field'
+        verbose_name = 'Category Field'
+        verbose_name_plural = 'Category Fields'
+        ordering = ['category', 'display_order', 'field_name']
+        unique_together = ['category', 'field_name']
+
+    def soft_delete(self):
+        """Soft delete the category field"""
+        self.is_delete = True
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def __str__(self):
+        return f"{self.category.category_name} - {self.field_label}"
+
+
 class Product(models.Model):
     """Product catalog model"""
     product_name = models.CharField(max_length=255)
@@ -37,6 +111,13 @@ class Product(models.Model):
     product_price = models.DecimalField(max_digits=10, decimal_places=2)
     product_image = models.ImageField(upload_to='products/', null=True, blank=True)
     product_form_response = models.CharField(max_length=500, null=True, blank=True)
+    product_category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='products'
+    )
     product_is_parent = models.BooleanField(default=False)
     product_parent_id = models.ForeignKey(
         'self',
@@ -67,6 +148,32 @@ class Product(models.Model):
         return self.product_name
 
 
+class ProductFieldValue(models.Model):
+    """Dynamic field values for products"""
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='field_values'
+    )
+    category_field = models.ForeignKey(
+        CategoryField,
+        on_delete=models.CASCADE,
+        related_name='values'
+    )
+    field_value = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'sonic_app_product_field_value'
+        verbose_name = 'Product Field Value'
+        verbose_name_plural = 'Product Field Values'
+        unique_together = ['product', 'category_field']
+
+    def __str__(self):
+        return f"{self.product.product_name} - {self.category_field.field_label}: {self.field_value}"
+
+
 class Order(models.Model):
     """Order model"""
     ORDER_STATUS_CHOICES = [
@@ -78,9 +185,10 @@ class Order(models.Model):
     ]
 
     order_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
-    order_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='orders')
+    order_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='orders', null=True, blank=True)
     order_quantity = models.IntegerField(default=1)
     order_price = models.DecimalField(max_digits=10, decimal_places=2)
+    order_total_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     order_status = models.CharField(max_length=50, choices=ORDER_STATUS_CHOICES, default='pending')
     order_date = models.DateTimeField(null=True, blank=True)
     order_notes = models.TextField(null=True, blank=True)
@@ -100,6 +208,11 @@ class Order(models.Model):
         self.is_delete = True
         self.deleted_at = timezone.now()
         self.save()
+
+    def calculate_total_price(self):
+        """Calculate total price from order items"""
+        total = sum(item.price * item.quantity for item in self.order_items.all())
+        return total
 
     def __str__(self):
         return f"Order #{self.id} - {self.order_user.username}"
@@ -142,10 +255,37 @@ class CustomizeOrders(models.Model):
         return f"Custom Order #{self.id} - {self.customize_user.username}"
 
 
+class OrderItem(models.Model):
+    """Order items model for multiple products per order"""
+    order = models.ForeignKey(
+        'Order',
+        on_delete=models.CASCADE,
+        related_name='order_items'
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='order_items'
+    )
+    quantity = models.IntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'sonic_app_order_item'
+        verbose_name = 'Order Item'
+        verbose_name_plural = 'Order Items'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Order #{self.order.id} - {self.product.product_name} x{self.quantity}"
+
+
 class AddToCart(models.Model):
     """Shopping cart model"""
     cart_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart_items')
-    cart_product = models.CharField(max_length=255)
+    cart_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='cart_items')
     cart_quantity = models.IntegerField(default=1)
     cart_status = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -158,6 +298,7 @@ class AddToCart(models.Model):
         verbose_name = 'Cart Item'
         verbose_name_plural = 'Cart Items'
         ordering = ['-created_at']
+        unique_together = ['cart_user', 'cart_product', 'cart_status']
 
     def soft_delete(self):
         """Soft delete the cart item"""

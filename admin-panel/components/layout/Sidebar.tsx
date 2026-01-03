@@ -34,6 +34,11 @@ const menuItems = [
     icon: Users,
   },
   {
+    title: 'Categories',
+    href: '/categories',
+    icon: Layers,
+  },
+  {
     title: 'Products',
     href: '/products',
     icon: Package,
@@ -153,4 +158,5 @@ export function Sidebar() {
     </>
   );
 }
+
 

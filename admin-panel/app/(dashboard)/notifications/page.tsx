@@ -13,11 +13,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Trash2 } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/utils/formatters';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { NotificationSender } from '@/components/dashboard/NotificationSender';
 
 export default function NotificationsPage() {
   const [page, setPage] = useState(1);
@@ -50,14 +51,9 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Notifications</h1>
-          <p className="text-muted-foreground">Manage user notifications</p>
+          <p className="text-muted-foreground">Manage and send notifications to users</p>
         </div>
-        <Button className="bg-[#842B25] hover:bg-[#6b231f]" asChild>
-          <Link href="/notifications/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Notification
-          </Link>
-        </Button>
+        <NotificationSender />
       </div>
 
       <div className="rounded-md border">
@@ -153,4 +149,5 @@ export default function NotificationsPage() {
     </div>
   );
 }
+
 
