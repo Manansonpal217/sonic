@@ -685,8 +685,8 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 					setIsLogoutVisible(false);
 				}}
 				title="Logout"
-				button1Label="yes Logout"
-				button2Label="cancel"
+				button1Label="Logout"
+				button2Label="Cancel"
 				message="Are you sure you want to logout?"
 				isLogout
 				Visible={isLogoutVisible}

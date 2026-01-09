@@ -2,10 +2,8 @@ import React from 'react';
 import { Modal, View } from 'react-native';
 import { Box } from '../Box';
 import { Pressable } from '../Pressable';
-import { DeviceHelper } from '../../helper/DeviceHelper';
 import { Text } from '../Text';
 import { fonts } from '../../style';
-import { Button } from '../Button';
 
 export interface LogoutPopupProps {
 	Visible: boolean;
@@ -37,49 +35,89 @@ export const LogoutPopup: React.FC<LogoutPopupProps> = ({
 				justifyContent: 'center',
 			}}
 		>
-			<Box height={isLogout ? '27%' : '30%'}>
-				<Box
-					flex={1}
-					borderRadius={16}
-					backgroundColor="white4"
-				>
-					<Box>
-						<Text
-							fontFamily={fonts.bold}
-							fontSize={16}
-							color="black"
-							textAlign="center"
-							marginTop="m"
-						>
-							{title}
-						</Text>
+			<Box 
+				width="85%"
+				borderRadius={16}
+				backgroundColor="white"
+				paddingVertical="m"
+			>
+				<Box paddingHorizontal="m">
+					<Text
+						fontFamily={fonts.bold}
+						fontSize={18}
+						color="black"
+						textAlign="center"
+						marginTop="s"
+					>
+						{title}
+					</Text>
 
-						<Text
-							fontFamily={fonts.regular}
-							fontSize={16}
-							color="black"
-							textAlign="center"
-							marginHorizontal="m"
-							marginTop="m"
-						>
-							{message}
-						</Text>
-						<Box height={DeviceHelper.calculateHeightRatio(37)} />
-						<Box flexDirection="row" justifyContent="center">
-							<Button
-								label={button1Label}
+					<Text
+						fontFamily={fonts.regular}
+						fontSize={15}
+						color="black"
+						textAlign="center"
+						marginTop="m"
+						marginBottom="lg"
+					>
+						{message}
+					</Text>
+					
+					<Box 
+						flexDirection="row" 
+						justifyContent="space-between"
+						marginTop="m"
+					>
+						<Box flex={1} marginRight="xs">
+							<Pressable
+								onPress={() => {
+									onClose();
+								}}
+							>
+								<Box
+									backgroundColor="gray5"
+									paddingVertical="s"
+									paddingHorizontal="m"
+									borderRadius={8}
+									alignItems="center"
+									justifyContent="center"
+								>
+									<Text
+										fontFamily={fonts.semiBold}
+										fontSize={15}
+										color="black"
+										textAlign="center"
+									>
+										{button2Label}
+									</Text>
+								</Box>
+							</Pressable>
+						</Box>
+						<Box flex={1} marginLeft="xs">
+							<Pressable
 								onPress={() => {
 									onClose();
 									onLogout();
 								}}
-							/>
-							<Button
-								label={button2Label}
-								onPress={() => {
-									onClose();
-								}}
-								variant="secondary"
-							/>
+							>
+								<Box
+									backgroundColor="red3"
+									paddingVertical="s"
+									paddingHorizontal="m"
+									borderRadius={8}
+									alignItems="center"
+									justifyContent="center"
+								>
+									<Text
+										fontFamily={fonts.semiBold}
+										fontSize={15}
+										color="white"
+										textAlign="center"
+									>
+										{button1Label}
+									</Text>
+								</Box>
+							</Pressable>
 						</Box>
 					</Box>
 				</Box>

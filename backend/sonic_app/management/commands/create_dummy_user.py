@@ -215,3 +215,5 @@ class Command(BaseCommand):
         self.stdout.write(f'  Notifications: {notification_count}')
         self.stdout.write('')
 
+
+

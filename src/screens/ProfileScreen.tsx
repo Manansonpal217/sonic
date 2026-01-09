@@ -550,7 +550,7 @@ export const ProfileScreen: React.FC = observer(() => {
 					setIsLogoutVisible(false);
 				}}
 				title="Logout"
-				button1Label="Yes Logout"
+				button1Label="Logout"
 				button2Label="Cancel"
 				message="Are you sure you want to logout?"
 				isLogout
