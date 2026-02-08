@@ -44,7 +44,7 @@ if (getRNMinorVersion() >= 75) {
   }
 }
 
-rootProject.name = 'Sonic Todo'
+rootProject.name = 'Ivara app'
 
 dependencyResolutionManagement {
   versionCatalogs {
