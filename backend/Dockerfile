@@ -26,6 +26,7 @@ RUN uv pip install --system \
     pillow>=10.0.0 \
     python-decouple>=3.8 \
     django-filter>=23.3 \
+    requests>=2.31.0 \
     drf-spectacular>=0.27.0 \
     channels>=4.0.0 \
     channels-redis>=4.1.0 \

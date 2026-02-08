@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:15-alpine
     container_name: sonic_postgres
+    command: postgres -c log_min_messages=error
     environment:
       POSTGRES_DB: ${DB_NAME:-sonic_db}
       POSTGRES_USER: ${DB_USER:-sonic_user}
@@ -11,7 +12,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sonic_user}"]
+      # Use the built-in 'postgres' database for health checks so we never depend on a per-app DB name.
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sonic_user} -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,9 +44,11 @@ services:
     image: sosedoff/pgweb:latest
     container_name: sonic_pgweb
     ports:
-      - "8081:8081"
+      # Use 5050 so 8081 stays free for React Native Metro (avoids POST /symbolicate 404 when app talks to wrong port)
+      - "5050:8081"
     environment:
-      - PGWEB_DATABASE_URL=postgres://${DB_USER:-sonic_user}:${DB_PASSWORD:-sonic_password}@db:5432/${DB_NAME:-sonic_db}?sslmode=disable
+      # pgweb uses DATABASE_URL (not PGWEB_DATABASE_URL). Database must be sonic_db (same as POSTGRES_DB).
+      - DATABASE_URL=postgres://sonic_user:sonic_password@db:5432/sonic_db?sslmode=disable
     depends_on:
       db:
         condition: service_healthy

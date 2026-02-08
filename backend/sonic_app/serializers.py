@@ -3,7 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from .models import (
     Category, CategoryField, User, Product, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
     Banners, CMS, NotificationType, NotificationTable,
-    OrderEmails, Session
+    OrderEmails, Session, OTP
 )
 
 
@@ -77,10 +77,12 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'password', 'first_name', 'last_name',
+            'phone_number', 'company_name', 'gst', 'address',
             'user_status', 'is_active', 'is_staff', 'is_superuser',
+            'is_approved', 'is_phone_verified', 'approved_at', 'approved_by',
             'date_joined', 'last_login', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'date_joined', 'last_login', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'date_joined', 'last_login', 'created_at', 'updated_at', 'approved_at', 'approved_by']
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
@@ -117,6 +119,81 @@ class UserCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         user = User.objects.create_user(**validated_data)
+        return user
+
+
+class ClientRegistrationSerializer(serializers.ModelSerializer):
+    """Client registration serializer for mobile app"""
+    user_name = serializers.CharField(write_only=True, required=True)
+    user_email = serializers.EmailField(write_only=True, required=True)
+    user_phone_number = serializers.CharField(write_only=True, required=True)
+    user_company_name = serializers.CharField(write_only=True, required=True)
+    user_gst = serializers.CharField(write_only=True, required=True)
+    user_address = serializers.CharField(write_only=True, required=True)
+    user_password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    confirm_password = serializers.CharField(write_only=True, required=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'user_name', 'user_email', 'user_phone_number', 'user_company_name',
+            'user_gst', 'user_address', 'user_password', 'confirm_password'
+        ]
+
+    def validate(self, attrs):
+        if attrs['user_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError({"user_password": "Password fields didn't match."})
+        
+        # Check if email already exists
+        if User.objects.filter(email=attrs['user_email'], is_delete=False).exists():
+            raise serializers.ValidationError({"user_email": "A user with this email already exists."})
+        
+        # Check if phone number already exists
+        if User.objects.filter(phone_number=attrs['user_phone_number'], is_delete=False).exists():
+            raise serializers.ValidationError({"user_phone_number": "A user with this phone number already exists."})
+        
+        return attrs
+
+    def create(self, validated_data):
+        # Extract registration data
+        user_name = validated_data.pop('user_name')
+        user_email = validated_data.pop('user_email')
+        user_phone_number = validated_data.pop('user_phone_number')
+        user_company_name = validated_data.pop('user_company_name')
+        user_gst = validated_data.pop('user_gst')
+        user_address = validated_data.pop('user_address')
+        user_password = validated_data.pop('user_password')
+        validated_data.pop('confirm_password')
+        
+        # Split user_name into first_name and last_name
+        name_parts = user_name.strip().split(' ', 1)
+        first_name = name_parts[0] if name_parts else ''
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
+        
+        # Generate username from email (use email prefix)
+        username = user_email.split('@')[0]
+        # Ensure username is unique
+        base_username = username
+        counter = 1
+        while User.objects.filter(username=username, is_delete=False).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+        
+        # Create user with is_approved=False
+        user = User.objects.create_user(
+            username=username,
+            email=user_email,
+            password=user_password,
+            first_name=first_name,
+            last_name=last_name,
+            phone_number=user_phone_number,
+            company_name=user_company_name,
+            gst=user_gst,
+            address=user_address,
+            is_approved=False,  # Requires admin approval
+            is_active=True,  # User is active but not approved
+        )
+        
         return user
 
 
@@ -366,7 +443,49 @@ class SessionSerializer(serializers.ModelSerializer):
         model = Session
         fields = [
             'id', 'session_user', 'session_user_username', 'session_key',
-            'fcm_token', 'device_type', 'created_at', 'updated_at', 'expire_date'
+            'fcm_token', 'device_type', 'latitude', 'longitude', 'address',
+            'created_at', 'updated_at', 'expire_date'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class OTPSerializer(serializers.ModelSerializer):
+    """OTP serializer"""
+    
+    class Meta:
+        model = OTP
+        fields = [
+            'id', 'phone_number', 'otp_code', 'is_verified', 'attempts',
+            'expires_at', 'created_at', 'verified_at'
+        ]
+        read_only_fields = ['id', 'otp_code', 'is_verified', 'attempts', 'created_at', 'verified_at']
+
+
+class SendOTPSerializer(serializers.Serializer):
+    """Validate send OTP request."""
+    phone_number = serializers.CharField(required=True, allow_blank=False, trim_whitespace=True)
+
+    def validate_phone_number(self, value):
+        from .services import normalize_phone
+        normalized = normalize_phone(value)
+        if not normalized or len(normalized) < 10:
+            raise serializers.ValidationError("Invalid phone number.")
+        return normalized
+
+
+class VerifyOTPSerializer(serializers.Serializer):
+    """Validate verify OTP request."""
+    phone_number = serializers.CharField(required=True, allow_blank=False, trim_whitespace=True)
+    otp_code = serializers.CharField(required=True, min_length=6, max_length=6, trim_whitespace=True)
+    fcm_token = serializers.CharField(required=False, allow_blank=True)
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_phone_number(self, value):
+        from .services import normalize_phone
+        normalized = normalize_phone(value)
+        if not normalized:
+            raise serializers.ValidationError("Invalid phone number.")
+        return normalized
 

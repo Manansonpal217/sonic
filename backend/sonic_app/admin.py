@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     Category, CategoryField, User, Product, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
     Banners, CMS, NotificationType, NotificationTable,
-    OrderEmails, Session
+    OrderEmails, Session, OTP
 )
 
 
@@ -35,10 +35,10 @@ class ProductFieldValueAdmin(admin.ModelAdmin):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ['username', 'email', 'first_name', 'last_name', 'user_status', 'is_active', 'created_at']
-    list_filter = ['user_status', 'is_active', 'is_staff', 'is_superuser', 'created_at']
-    search_fields = ['username', 'email', 'first_name', 'last_name']
-    readonly_fields = ['created_at', 'updated_at', 'date_joined', 'last_login']
+    list_display = ['username', 'email', 'first_name', 'last_name', 'user_status', 'is_active', 'is_approved', 'created_at']
+    list_filter = ['user_status', 'is_active', 'is_approved', 'is_staff', 'is_superuser', 'created_at']
+    search_fields = ['username', 'email', 'first_name', 'last_name', 'phone_number']
+    readonly_fields = ['created_at', 'updated_at', 'date_joined', 'last_login', 'approved_at', 'approved_by']
 
 
 @admin.register(Product)
@@ -135,4 +135,12 @@ class SessionAdmin(admin.ModelAdmin):
     list_filter = ['device_type', 'created_at', 'expire_date']
     search_fields = ['session_key', 'session_user__username', 'fcm_token']
     readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(OTP)
+class OTPAdmin(admin.ModelAdmin):
+    list_display = ['phone_number', 'otp_code', 'is_verified', 'attempts', 'expires_at', 'created_at']
+    list_filter = ['is_verified', 'created_at', 'expires_at']
+    search_fields = ['phone_number', 'otp_code']
+    readonly_fields = ['created_at', 'verified_at']
 
