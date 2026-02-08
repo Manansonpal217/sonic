@@ -2,12 +2,13 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Keyboard, Animated, TouchableOpacity, StyleSheet, View, Dimensions } from 'react-native';
-import { Box, Image, Screen, StatusBarType, Text, Pressable } from '../components';
+import { Box, Image, Screen, StatusBarType, Text, Pressable, Logo } from '../components';
 import { Images } from '../assets';
 import { fonts } from '../style';
 import { DeviceHelper } from '../helper/DeviceHelper';
 import { AnimatedInput } from '../components/auth/AnimatedInput';
 import { AnimatedButton } from '../components/auth/AnimatedButton';
+import { OTPInput } from '../components/auth/OTPInput';
 import { 
 	createFadeInAnimation, 
 	createSlideUpAnimation,
@@ -21,10 +22,6 @@ import { authStore } from '../stores/AuthStore';
 
 const { width, height } = Dimensions.get('window');
 
-// DUMMY CREDENTIALS FOR BYPASS
-const DUMMY_EMAIL = 'demo@sonic.com';
-const DUMMY_PASSWORD = 'demo123';
-
 export interface LoginScreenProps {
 	onNavigateToRegistration?: () => void;
 }
@@ -33,14 +30,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 	const {
 		control,
 		handleSubmit,
-		setValue,
 		getValues,
+		setValue,
 		formState: { errors },
 	} = useForm();
 	
-	const [isShowPassword, setIsShowPassword] = useState(true);
+	const [step, setStep] = useState<'phone' | 'otp'>('phone'); // 'phone' or 'otp'
+	const [phoneNumber, setPhoneNumber] = useState('');
+	const [otpCode, setOtpCode] = useState('');
 	const [keyboardStatus, setKeyboardStatus] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
+	const [otpSent, setOtpSent] = useState(false);
+	const [resendTimer, setResendTimer] = useState(0);
 
 	// Animation refs
 	const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -73,79 +74,101 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 		};
 	}, []);
 
-	const submit = async () => {
-		setIsLoading(true);
-		const email = getValues().email;
-		const password = getValues().password;
+	// Resend timer countdown
+	useEffect(() => {
+		if (resendTimer > 0) {
+			const timer = setTimeout(() => {
+				setResendTimer(resendTimer - 1);
+			}, 1000);
+			return () => clearTimeout(timer);
+		}
+	}, [resendTimer]);
 
-		// Check for dummy credentials first
-		if (email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
-			setTimeout(async () => {
-				setIsLoading(false);
-				showSuccessMessage('Login successful! Welcome back! 🎉');
-				// Store dummy login data
-				await authStore.setLoginData({
-					token: 'dummy_token',
-					user: {
-						userName: 'Demo User',
-						userEmail: email,
-					},
-				});
-				// Navigate to dashboard
-				reset({ screenName: Route.Dashboard });
-			}, 1500);
+	const handleSendOTP = async () => {
+		const phone = getValues().phone_number;
+		if (!phone) {
+			showErrorMessage('Please enter your phone number');
 			return;
 		}
 
-		// Regular API call
-		const response = await authFactory.loginApi(email, password);
-		setIsLoading(false);
-		
-		if (response.isSuccess) {
-			showSuccessMessage('Login successful! Welcome back! 🎉');
-			// Store login data
-			if (response.data) {
-				await authStore.setLoginData(response.data);
+		if (!utils.phoneNoRegexNoSpace().test(phone)) {
+			showErrorMessage('Please enter a valid phone number');
+			return;
+		}
+
+		setIsLoading(true);
+		setPhoneNumber(phone);
+
+		try {
+			const response = await authFactory.sendOTP(phone);
+			
+			if (response.isSuccess) {
+				setOtpSent(true);
+				setStep('otp');
+				setResendTimer(60); // 60 seconds countdown
+			} else {
+				showErrorMessage(response.error || 'Failed to send OTP. Please try again.');
 			}
-			// Navigate to dashboard
-			reset({ screenName: Route.Dashboard });
-		} else {
-			showErrorMessage(response.error || 'Login failed. Please try again.');
+		} catch (error: any) {
+			console.error('Send OTP error:', error);
+			showErrorMessage(error?.message || 'Failed to send OTP. Please check your connection.');
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
-	const handleOnSubmitPress = () => {
-		const email = getValues().email;
-		const password = getValues().password;
-
-		if (!email || !password) {
-			alert('Please fill in all required fields');
+	const handleVerifyOTP = async () => {
+		if (otpCode.length !== 6) {
+			showErrorMessage('Please enter the complete 6-digit OTP code');
 			return;
 		}
 
-		if (!utils.emailRegex().test(email)) {
-			alert('Please enter a valid email address');
-			return;
+		setIsLoading(true);
+
+		try {
+			const response = await authFactory.verifyOTP(phoneNumber, otpCode);
+			
+			if (response.isSuccess) {
+				showSuccessMessage('Login successful! Welcome back! 🎉');
+				// Store login data
+				if (response.data) {
+					await authStore.setLoginData(response.data);
+				}
+				// Navigate to dashboard
+				reset({ screenName: Route.Dashboard });
+			} else {
+				showErrorMessage(response.error || 'Invalid OTP code. Please try again.');
+			}
+		} catch (error: any) {
+			console.error('Verify OTP error:', error);
+			showErrorMessage(error?.message || 'Failed to verify OTP. Please try again.');
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleResendOTP = async () => {
+		if (resendTimer > 0) {
+			return; // Don't resend if timer is active
 		}
 
-		handleSubmit(submit)();
+		await handleSendOTP();
+	};
+
+	const handleBackToPhone = () => {
+		setStep('phone');
+		setOtpCode('');
+		setOtpSent(false);
+		setResendTimer(0);
 	};
 
 	const getCustomValidation = (id: string) => {
 		const validations: Record<string, (value: any) => string | undefined> = {};
 		switch (id) {
-			case 'email':
-				validations.validEmail = (value: any) => {
-					if (!utils.emailRegex().test(value)) {
-						return 'Please enter a valid email address';
-					}
-					return undefined;
-				};
-				break;
-			case 'password':
-				validations.validPassword = (value: any) => {
-					if (value && value.length < 6) {
-						return 'Password must be at least 6 characters';
+			case 'phone_number':
+				validations.validPhone = (value: any) => {
+					if (value && !utils.phoneNoRegexNoSpace().test(value)) {
+						return 'Please enter a valid phone number';
 					}
 					return undefined;
 				};
@@ -156,11 +179,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 
 	const handleCreateNowOnPress = () => {
 		navigate({ screenName: Route.Registration });
-	};
-
-	const handleForgotPasswordPress = () => {
-		// Navigate to Forgot Password - you can add navigation here
-		console.log('Navigate to Forgot Password');
 	};
 
 	return (
@@ -197,12 +215,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 							},
 						]}
 					>
-						<Image
-							source={Images.logo}
-							height={100}
-							resizeMode="contain"
-							width={100}
-						/>
+					<Logo
+						width={100}
+						height={90}
+					/>
 					</Animated.View>
 				</Animated.View>
 
@@ -222,7 +238,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 						textAlign="center"
 						marginBottom="es"
 					>
-						Welcome Back
+						{step === 'phone' ? 'Welcome Back' : 'Enter OTP'}
 					</Text>
 					<Text
 						fontSize={15}
@@ -231,7 +247,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 						textAlign="center"
 						lineHeight={22}
 					>
-						Sign in to continue your journey
+						{step === 'phone' 
+							? 'Sign in with your phone number'
+							: `We've sent a verification code to ${phoneNumber}`
+						}
 					</Text>
 				</Animated.View>
 
@@ -245,91 +264,107 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 						},
 					]}
 				>
-					<Controller
-						control={control}
-						defaultValue=""
-						name="email"
-						rules={{
-							required: 'Email is required',
-							validate: { ...getCustomValidation('email') },
-						}}
-						render={({ field: { value, onChange } }) => (
-							<AnimatedInput
-								label="Email Address"
-								value={value}
-								onChangeText={onChange}
-								keyboardType="email-address"
-								autoCapitalize="none"
-								hasError={!!errors.email}
-								errorMessage={errors.email?.message as string}
-								isRequired
-								icon={
-									<Text fontSize={20}>📧</Text>
-								}
+					{step === 'phone' ? (
+						<>
+							<Controller
+								control={control}
+								defaultValue=""
+								name="phone_number"
+								rules={{
+									required: 'Phone number is required',
+									validate: { ...getCustomValidation('phone_number') },
+								}}
+								render={({ field: { value, onChange } }) => (
+									<AnimatedInput
+										label="Phone Number"
+										value={value}
+										onChangeText={onChange}
+										keyboardType="phone-pad"
+										autoCapitalize="none"
+										hasError={!!errors.phone_number}
+										errorMessage={errors.phone_number?.message as string}
+										isRequired
+										icon={
+											<Text fontSize={20}>📱</Text>
+										}
+									/>
+								)}
 							/>
-						)}
-					/>
 
-					<Controller
-						control={control}
-						defaultValue=""
-						name="password"
-						rules={{
-							required: 'Password is required',
-							validate: { ...getCustomValidation('password') },
-						}}
-						render={({ field: { value, onChange } }) => (
-							<AnimatedInput
-								label="Password"
-								value={value}
-								onChangeText={onChange}
-								secureTextEntry={isShowPassword}
-								hasError={!!errors.password}
-								errorMessage={errors.password?.message as string}
-								isRequired
-								icon={
-									<Text fontSize={20}>🔒</Text>
-								}
-								rightComponent={
-									<Pressable
-										onPress={() => setIsShowPassword(!isShowPassword)}
-										justifyContent="center"
-										alignItems="center"
-										height={40}
-										width={40}
+							{/* Send OTP Button */}
+							<AnimatedButton
+								title={isLoading ? 'Sending OTP...' : 'Send OTP'}
+								onPress={handleSendOTP}
+								loading={isLoading}
+								disabled={isLoading}
+							/>
+						</>
+					) : (
+						<>
+							{/* Back button */}
+							<TouchableOpacity
+								onPress={handleBackToPhone}
+								style={styles.backButton}
+							>
+								<Text
+									color="red3"
+									fontSize={14}
+									fontFamily={fonts.medium}
+								>
+									← Change Phone Number
+								</Text>
+							</TouchableOpacity>
+
+							{/* OTP Input */}
+							<OTPInput
+								value={otpCode}
+								onChangeText={setOtpCode}
+								length={6}
+								hasError={false}
+							/>
+
+							{/* Resend OTP */}
+							<View style={styles.resendContainer}>
+								<Text
+									fontSize={14}
+									color="gray"
+									fontFamily={fonts.regular}
+									textAlign="center"
+								>
+									Didn't receive the code?{' '}
+								</Text>
+								{resendTimer > 0 ? (
+									<Text
+										fontSize={14}
+										color="gray"
+										fontFamily={fonts.medium}
+										textAlign="center"
 									>
-										<Image
-											source={isShowPassword ? Images.eys_show : Images.eys_hide}
-											width={24}
-											height={24}
-										/>
-									</Pressable>
-								}
+										Resend in {resendTimer}s
+									</Text>
+								) : (
+									<TouchableOpacity onPress={handleResendOTP}>
+										<Text
+											fontSize={14}
+											fontFamily={fonts.bold}
+											color="red3"
+											textAlign="center"
+										>
+											Resend OTP
+										</Text>
+									</TouchableOpacity>
+								)}
+							</View>
+
+							{/* Verify OTP Button */}
+							<AnimatedButton
+								title={isLoading ? 'Verifying...' : 'Verify OTP'}
+								onPress={handleVerifyOTP}
+								loading={isLoading}
+								disabled={isLoading || otpCode.length !== 6}
 							/>
-						)}
-					/>
-
-					{/* Forgot Password */}
-					<TouchableOpacity
-						onPress={handleForgotPasswordPress}
-						style={styles.forgotButton}
-					>
-						<Text
-							color="red3"
-							fontSize={14}
-							fontFamily={fonts.bold}
-						>
-							Forgot Password?
-						</Text>
-					</TouchableOpacity>
-
-					{/* Login Button */}
-					<AnimatedButton
-						title={isLoading ? 'Signing In...' : 'Sign In'}
-						onPress={handleOnSubmitPress}
-						loading={isLoading}
-						disabled={isLoading}
-					/>
+						</>
+					)}
 				</Animated.View>
 
 				{/* Sign Up Link */}
@@ -411,10 +446,16 @@ const styles = StyleSheet.create({
 	formContainer: {
 		flex: 1,
 	},
-	forgotButton: {
-		alignSelf: 'flex-end',
-		marginRight: 24,
+	backButton: {
+		alignSelf: 'flex-start',
+		marginLeft: 16,
 		marginBottom: 16,
+	},
+	resendContainer: {
+		flexDirection: 'row',
+		justifyContent: 'center',
+		alignItems: 'center',
+		marginBottom: 24,
 		marginTop: -8,
 	},
 	signupContainer: {
@@ -426,4 +467,3 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 });
-

@@ -1,16 +1,34 @@
-// export const BASE_URL = 'https://api.sonicjewellersltd.in/app'; // live
+import { Platform } from 'react-native';
 
-// Configuration for local development
-// For iOS Simulator: use 'http://localhost:8000/app'
-// For Android Emulator: use 'http://10.0.2.2:8000/app'
-// For Physical Devices: use your machine's IP (e.g., 'http://10.53.108.72:8000/app')
-// Current IP detected: 10.53.108.72 (update if your IP changes)
-export const BASE_URL = __DEV__ 
-	? 'http://10.53.108.72:8000/app' // Using your machine's IP for physical device testing
-	: 'https://api.sonicjewellersltd.in/app'; // production
+const PRODUCTION_API = 'https://api.sonicjewellersltd.in/app';
 
+function getDevBaseUrl(): string {
+	const env = process.env.EXPO_PUBLIC_API_BASE_URL;
+	if (env && env.trim()) {
+		const base = env.trim().replace(/\/+$/, '');
+		return base.includes('/app') ? base : `${base}/app`;
+	}
+	// iOS Simulator: localhost is your Mac. Android Emulator: 10.0.2.2 is the host.
+	// For a physical device, set EXPO_PUBLIC_API_BASE_URL in .env to your machine IP (e.g. http://192.168.1.5:8000/app)
+	if (Platform.OS === 'android') return 'http://10.0.2.2:8000/app';
+	return 'http://localhost:8000/app';
+}
+
+export const BASE_URL = __DEV__ ? getDevBaseUrl() : PRODUCTION_API;
+
+/** Base origin for media and WebSocket (no /app path). e.g. http://localhost:8000 */
+export const API_ORIGIN = BASE_URL.replace(/\/app\/?$/, '');
+/** Base URL for media assets. e.g. http://localhost:8000/media */
+export const MEDIA_BASE_URL = `${API_ORIGIN}/media`;
+/** WebSocket base. e.g. ws://localhost:8000 */
+export const WS_BASE_URL = API_ORIGIN.replace(/^http/, 'ws');
+
+export const HEALTH = (): string => `${BASE_URL}/health`;
 export const LOGIN = (): string => `${BASE_URL}/client-login`;
 export const REGISTRATION = (): string => `${BASE_URL}/client-registration`;
+export const SEND_OTP = (): string => `${BASE_URL}/send-otp`;
+export const VERIFY_OTP = (): string => `${BASE_URL}/verify-otp`;
+export const UPDATE_LOCATION = (): string => `${BASE_URL}/update-location`;
 export const PRODUCT_LIST = (): string => `${BASE_URL}/product-list`;
 export const PRODUCT_DETAIL = (): string => `${BASE_URL}/product-details`;
 export const PRODUCT_FORM_RESPONSE = (): string => `${BASE_URL}/save-form-response`;
