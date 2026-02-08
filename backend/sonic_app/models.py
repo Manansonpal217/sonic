@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 
@@ -38,6 +39,10 @@ class User(AbstractUser):
     company_name = models.CharField(max_length=255, null=True, blank=True)
     gst = models.CharField(max_length=50, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
+    is_approved = models.BooleanField(default=False, help_text='User approval status for app access')
+    is_phone_verified = models.BooleanField(default=False, help_text='Phone number verified via OTP')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_users')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_delete = models.BooleanField(default=False)
@@ -47,6 +52,13 @@ class User(AbstractUser):
         db_table = 'sonic_app_users'
         verbose_name = 'User'
         verbose_name_plural = 'Users'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['phone_number'],
+                condition=Q(is_delete=False) & Q(phone_number__isnull=False) & ~Q(phone_number=''),
+                name='unique_phone_per_active_user',
+            ),
+        ]
 
     def soft_delete(self):
         """Soft delete the user"""
@@ -463,8 +475,12 @@ class Session(models.Model):
     """User session management with FCM tokens model"""
     session_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
     session_key = models.CharField(max_length=40, unique=True)
+    auth_token = models.CharField(max_length=64, unique=True, null=True, blank=True, help_text='Bearer token for mobile API auth')
     fcm_token = models.CharField(max_length=255, null=True, blank=True)
     device_type = models.CharField(max_length=50, null=True, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     expire_date = models.DateTimeField()
@@ -477,4 +493,33 @@ class Session(models.Model):
 
     def __str__(self):
         return f"Session {self.session_key} - {self.session_user.username}"
+
+
+class OTP(models.Model):
+    """OTP codes for phone number verification"""
+    phone_number = models.CharField(max_length=20)
+    otp_code = models.CharField(max_length=6)
+    is_verified = models.BooleanField(default=False)
+    attempts = models.IntegerField(default=0)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'sonic_app_otp'
+        verbose_name = 'OTP'
+        verbose_name_plural = 'OTPs'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['phone_number', 'otp_code']),
+            models.Index(fields=['phone_number', 'is_verified']),
+        ]
+
+    def is_expired(self):
+        """Check if OTP has expired"""
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"OTP for {self.phone_number} - {self.otp_code}"
 

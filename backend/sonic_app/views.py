@@ -10,19 +10,34 @@ from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from .services import NotificationService
+from .services import NotificationService, OTPSmsService, normalize_phone
 
 from .models import (
     Category, CategoryField, User, Product, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
     Banners, CMS, NotificationType, NotificationTable,
-    OrderEmails, Session
+    OrderEmails, Session, OTP
 )
 from .serializers import (
     CategorySerializer, CategoryFieldSerializer, UserSerializer, UserCreateSerializer, ProductSerializer,
     ProductFieldValueSerializer, OrderSerializer, OrderItemSerializer, CustomizeOrdersSerializer, AddToCartSerializer,
     BannersSerializer, CMSSerializer, NotificationTypeSerializer,
-    NotificationTableSerializer, OrderEmailsSerializer, SessionSerializer
+    NotificationTableSerializer, OrderEmailsSerializer, SessionSerializer, ClientRegistrationSerializer, OTPSerializer,
+    SendOTPSerializer, VerifyOTPSerializer,
 )
+
+# OTP rate limits
+MAX_OTP_SENDS_PER_HOUR = 5
+MAX_OTP_VERIFY_ATTEMPTS = 5
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health(request):
+    """Health check for load balancers and monitoring. Returns 200 when backend is running."""
+    return Response(
+        {'status': 'ok', 'message': 'Backend is healthy'},
+        status=status.HTTP_200_OK,
+    )
 
 
 @extend_schema_view(
@@ -193,8 +208,11 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         user_status = self.request.query_params.get('user_status', None)
+        is_approved = self.request.query_params.get('is_approved', None)
         if user_status is not None:
             queryset = queryset.filter(user_status=user_status.lower() == 'true')
+        if is_approved is not None:
+            queryset = queryset.filter(is_approved=is_approved.lower() == 'true')
         return queryset
 
     @extend_schema(
@@ -222,6 +240,43 @@ class UserViewSet(viewsets.ModelViewSet):
             deleted_at=timezone.now()
         )
         return Response({'message': 'Users soft deleted successfully'}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['patch'])
+    @extend_schema(
+        summary="Approve User",
+        description="Approve a user for app access",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'approved': {'type': 'boolean'}
+                }
+            }
+        },
+        responses={
+            200: {'description': 'User approval status updated'},
+            400: {'description': 'Invalid request'}
+        }
+    )
+    def approve(self, request, pk=None):
+        """Approve or reject user"""
+        user = self.get_object()
+        approved = request.data.get('approved', True)
+        
+        user.is_approved = approved
+        if approved:
+            user.approved_at = timezone.now()
+            user.approved_by = request.user if request.user.is_authenticated else None
+        else:
+            user.approved_at = None
+            user.approved_by = None
+        user.save()
+        
+        serializer = UserSerializer(user)
+        return Response({
+            'message': f'User {"approved" if approved else "rejected"} successfully',
+            'user': serializer.data
+        }, status=status.HTTP_200_OK)
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -770,9 +825,9 @@ class SessionViewSet(viewsets.ModelViewSet):
         return Response({'error': 'session_key and fcm_token are required'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
-@csrf_exempt
 @extend_schema(
     summary="Client Login",
     description="Authenticate user with email and password for admin panel",
@@ -843,4 +898,343 @@ def client_login(request):
         'message': 'Login successful',
         'user': serializer.data
     }, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@extend_schema(
+    summary="Client Registration",
+    description="Register a new user (requires admin approval)",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'user_name': {'type': 'string'},
+                'user_email': {'type': 'string', 'format': 'email'},
+                'user_phone_number': {'type': 'string'},
+                'user_company_name': {'type': 'string'},
+                'user_gst': {'type': 'string'},
+                'user_address': {'type': 'string'},
+                'user_password': {'type': 'string'},
+                'confirm_password': {'type': 'string'}
+            },
+            'required': ['user_name', 'user_email', 'user_phone_number', 'user_company_name', 'user_gst', 'user_address', 'user_password', 'confirm_password']
+        }
+    },
+    responses={
+        201: {'description': 'Registration successful, pending approval'},
+        400: {'description': 'Validation error'}
+    }
+)
+def client_registration(request):
+    """Client registration endpoint for mobile app"""
+    serializer = ClientRegistrationSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        user_serializer = UserSerializer(user)
+        return Response({
+            'message': 'Registration successful. Your account is pending admin approval.',
+            'user': user_serializer.data,
+            'is_approved': False
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@extend_schema(
+    summary="Send OTP",
+    description="Send OTP code to phone number",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'phone_number': {'type': 'string'}
+            },
+            'required': ['phone_number']
+        }
+    },
+    responses={
+        200: {'description': 'OTP sent successfully'},
+        400: {'description': 'Invalid phone number'}
+    }
+)
+def send_otp(request):
+    """Send OTP to phone number."""
+    import random
+    from django.conf import settings
+
+    serializer = SendOTPSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {'error': serializer.errors.get('phone_number', ['Invalid request'])[0] if serializer.errors else 'Invalid request'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    phone_number = serializer.validated_data['phone_number']
+
+    # Rate limit: max sends per hour per phone
+    since = timezone.now() - timezone.timedelta(hours=1)
+    recent_count = OTP.objects.filter(phone_number=phone_number, created_at__gte=since).count()
+    if recent_count >= MAX_OTP_SENDS_PER_HOUR:
+        return Response(
+            {'error': 'Too many OTP requests. Please try again later.'},
+            status=status.HTTP_429_TOO_MANY_REQUESTS
+        )
+
+    otp_code = str(random.randint(100000, 999999))
+    expires_at = timezone.now() + timezone.timedelta(minutes=5)
+
+    OTP.objects.filter(phone_number=phone_number, is_verified=False).update(is_verified=True)
+    OTP.objects.create(
+        phone_number=phone_number,
+        otp_code=otp_code,
+        expires_at=expires_at,
+        is_verified=False,
+        attempts=0,
+    )
+
+    # Send SMS in background so the API responds immediately and does not time out
+    import threading
+    def send_sms_async():
+        try:
+            OTPSmsService.send_otp(phone_number, otp_code)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).exception("Background OTP SMS failed: %s", e)
+    threading.Thread(target=send_sms_async, daemon=True).start()
+
+    response_data = {
+        'message': 'OTP sent successfully',
+        'phone_number': phone_number,
+        'expires_at': expires_at.isoformat(),
+    }
+    if getattr(settings, 'DEBUG', False):
+        response_data['otp_code'] = otp_code
+    return Response(response_data, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@extend_schema(
+    summary="Verify OTP",
+    description="Verify OTP code and login",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'phone_number': {'type': 'string'},
+                'otp_code': {'type': 'string'}
+            },
+            'required': ['phone_number', 'otp_code']
+        }
+    },
+    responses={
+        200: {'description': 'OTP verified and login successful'},
+        400: {'description': 'Invalid OTP or user not approved'}
+    }
+)
+def verify_otp(request):
+    """Verify OTP code and login user (passwordless)."""
+    from django.conf import settings
+    from django.contrib.auth import login as django_login
+    import secrets
+
+    serializer = VerifyOTPSerializer(data=request.data)
+    if not serializer.is_valid():
+        errors = serializer.errors
+        msg = errors.get('phone_number', errors.get('otp_code', ['Invalid request']))[0]
+        return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
+
+    phone_number = serializer.validated_data['phone_number']
+    otp_code = serializer.validated_data['otp_code']
+    fcm_token = serializer.validated_data.get('fcm_token') or ''
+    latitude = serializer.validated_data.get('latitude')
+    longitude = serializer.validated_data.get('longitude')
+    address = serializer.validated_data.get('address') or ''
+
+    try:
+        otp = OTP.objects.filter(
+            phone_number=phone_number,
+            is_verified=False,
+        ).order_by('-created_at').first()
+
+        if not otp:
+            return Response(
+                {'error': 'No OTP found for this phone number. Please request a new OTP.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if otp.attempts >= MAX_OTP_VERIFY_ATTEMPTS:
+            otp.is_verified = True
+            otp.save()
+            return Response(
+                {'error': 'Too many failed attempts. Please request a new OTP.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if otp.is_expired():
+            otp.is_verified = True
+            otp.save()
+            return Response(
+                {'error': 'OTP has expired. Please request a new OTP.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if otp.otp_code != otp_code:
+            otp.attempts += 1
+            otp.save()
+            return Response(
+                {'error': 'Invalid OTP code'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(phone_number=phone_number, is_delete=False, is_active=True)
+        except User.DoesNotExist:
+            base = phone_number[-10:] if len(phone_number) >= 10 else phone_number
+            username = f"otp_{base}"
+            if User.objects.filter(username=username, is_delete=False).exists():
+                username = f"otp_{phone_number}"
+            user = User.objects.create_user(
+                username=username,
+                email=f"{username}@sonic.local",
+                password=None,
+                phone_number=phone_number,
+                first_name="",
+                last_name="",
+                is_active=True,
+                is_approved=True,
+                is_delete=False,
+            )
+            user.set_unusable_password()
+            user.save()
+
+        if not user.is_approved:
+            otp.is_verified = True
+            otp.save()
+            return Response(
+                {'error': 'Your account is pending admin approval. Please wait for approval before logging in.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        otp.is_verified = True
+        otp.verified_at = timezone.now()
+        otp.save()
+
+        user.is_phone_verified = True
+        user.save(update_fields=['is_phone_verified'])
+
+        django_login(request, user)
+
+        token = secrets.token_urlsafe(32)
+        session_key = request.session.session_key
+        session, created = Session.objects.get_or_create(
+            session_key=session_key,
+            defaults={
+                'session_user': user,
+                'auth_token': token,
+                'expire_date': timezone.now() + timezone.timedelta(days=30),
+            }
+        )
+        if not created:
+            session.session_user = user
+            session.auth_token = token
+            session.expire_date = timezone.now() + timezone.timedelta(days=30)
+            session.save()
+        if fcm_token:
+            session.fcm_token = fcm_token
+        if latitude is not None:
+            session.latitude = latitude
+        if longitude is not None:
+            session.longitude = longitude
+        if address:
+            session.address = address
+        session.save()
+
+        user_serializer = UserSerializer(user)
+        return Response({
+            'message': 'OTP verified and login successful',
+            'token': token,
+            'user': user_serializer.data,
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@extend_schema(
+    summary="Update Location",
+    description="Update device location",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'latitude': {'type': 'number'},
+                'longitude': {'type': 'number'},
+                'address': {'type': 'string'}
+            },
+            'required': ['latitude', 'longitude']
+        }
+    },
+    responses={
+        200: {'description': 'Location updated successfully'},
+        400: {'description': 'Invalid location data'}
+    }
+)
+def update_location(request):
+    """Update device location (supports Bearer token or session auth)."""
+    latitude = request.data.get('latitude')
+    longitude = request.data.get('longitude')
+    address = request.data.get('address', '')
+
+    if latitude is None or longitude is None:
+        return Response(
+            {'error': 'latitude and longitude are required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    session = getattr(request, 'auth', None)
+    if isinstance(session, Session):
+        session.latitude = latitude
+        session.longitude = longitude
+        if address:
+            session.address = address
+        session.save()
+        serializer = SessionSerializer(session)
+        return Response({
+            'message': 'Location updated successfully',
+            'session': serializer.data
+        }, status=status.HTTP_200_OK)
+
+    session_key = request.session.session_key
+    if not session_key:
+        return Response(
+            {'error': 'No active session found'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    try:
+        session = Session.objects.get(session_key=session_key)
+        session.latitude = latitude
+        session.longitude = longitude
+        if address:
+            session.address = address
+        session.save()
+        serializer = SessionSerializer(session)
+        return Response({
+            'message': 'Location updated successfully',
+            'session': serializer.data
+        }, status=status.HTTP_200_OK)
+    except Session.DoesNotExist:
+        return Response(
+            {'error': 'Session not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
 

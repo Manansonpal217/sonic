@@ -1,11 +1,13 @@
 from django.urls import path, include
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.routers import DefaultRouter
 from .views import (
     CategoryViewSet, CategoryFieldViewSet, UserViewSet, ProductViewSet,
     ProductFieldValueViewSet, OrderViewSet,
     CustomizeOrdersViewSet, AddToCartViewSet, BannersViewSet,
     CMSViewSet, NotificationTypeViewSet, NotificationTableViewSet,
-    OrderEmailsViewSet, SessionViewSet, client_login
+    OrderEmailsViewSet, SessionViewSet, client_login, client_registration,
+    send_otp, verify_otp, update_location, health
 )
 
 router = DefaultRouter()
@@ -26,6 +28,11 @@ router.register(r'sessions', SessionViewSet, basename='session')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('client-login', client_login, name='client-login'),
+    path('health', health, name='health'),
+    path('client-login', csrf_exempt(client_login), name='client-login'),
+    path('client-registration', csrf_exempt(client_registration), name='client-registration'),
+    path('send-otp', csrf_exempt(send_otp), name='send-otp'),
+    path('verify-otp', csrf_exempt(verify_otp), name='verify-otp'),
+    path('update-location', update_location, name='update-location'),
 ]
 

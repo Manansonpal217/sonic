@@ -1,9 +1,85 @@
 """
 Service utilities for sonic_app
 """
+import logging
+import requests
+from django.conf import settings
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import NotificationTable, User, NotificationType
+
+logger = logging.getLogger(__name__)
+
+
+def normalize_phone(phone: str) -> str:
+    """Normalize phone number to digits only for consistent storage and lookup."""
+    if not phone:
+        return ""
+    s = str(phone).strip().replace(" ", "").replace("-", "")
+    return "".join(c for c in s if c.isdigit()) or ""
+
+
+# OTP SMS message template. {#var#} is replaced with the actual OTP code.
+OTP_MESSAGE_TEMPLATE = (
+    "Hello, customer your OTP for your login at Sonic Jewellers app {#var#}, thank you."
+)
+
+
+class OTPSmsService:
+    """Send OTP via Pearl SMS API."""
+
+    BASE_URL = "http://sms.pearlsms.com/public/sms/send"
+
+    @classmethod
+    def send_otp(cls, phone_number: str, otp_code: str) -> dict:
+        """
+        Send OTP SMS to the given phone number using Pearl SMS.
+
+        Args:
+            phone_number: Recipient number (digits only, e.g. 9484796938)
+            otp_code: 6-digit OTP string
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'provider_response': dict or None}
+        """
+        api_key = getattr(settings, 'PEARLSMS_API_KEY', None) or ''
+        sender = getattr(settings, 'PEARLSMS_SENDER', 'SPPLFW')
+        base_url = getattr(settings, 'PEARLSMS_BASE_URL', cls.BASE_URL)
+
+        if not api_key:
+            logger.warning("PEARLSMS_API_KEY not set; OTP SMS skipped (check server logs for OTP in dev).")
+            return {'success': False, 'message': 'SMS not configured', 'provider_response': None}
+
+        # Normalize number: strip spaces and ensure string
+        numbers = str(phone_number).strip().replace(' ', '')
+        message = OTP_MESSAGE_TEMPLATE.replace('{#var#}', otp_code)
+
+        params = {
+            'sender': sender,
+            'smstype': 'TRANS',
+            'numbers': numbers,
+            'message': message,
+            'unicode': 'no',
+            'apikey': api_key,
+        }
+
+        try:
+            # Use 8s timeout so background send does not hang; caller may run in a thread
+            resp = requests.post(base_url, params=params, timeout=8)
+            data = {}
+            try:
+                data = resp.json()
+            except Exception:
+                data = {'raw': resp.text}
+
+            if resp.status_code == 200 and data.get('status') in ('OK', 'SUCCESS'):
+                return {'success': True, 'message': 'SMS sent', 'provider_response': data}
+            err_msg = data.get('errormsg', data.get('message', resp.text))
+            logger.warning("Pearl SMS error: %s", err_msg)
+            return {'success': False, 'message': str(err_msg), 'provider_response': data}
+        except requests.RequestException as e:
+            logger.exception("Pearl SMS request failed: %s", e)
+            return {'success': False, 'message': str(e), 'provider_response': None}
 
 
 class NotificationService:

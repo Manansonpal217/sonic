@@ -18,8 +18,10 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-produc
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
-
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+# In dev allow any host so device/simulator (e.g. Host: 10.53.108.72:8000) can reach the API
+ALLOWED_HOSTS = (
+    ['*'] if DEBUG else config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+)
 
 
 # Application definition
@@ -41,10 +43,12 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'sonic_app.middleware.RequestLogMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'sonic_app.middleware.DisableCSRFForAPIMiddleware',  # before CsrfViewMiddleware
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -137,6 +141,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework configuration
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'sonic_app.auth.BearerTokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_FILTER_BACKENDS': [
@@ -164,13 +172,15 @@ SPECTACULAR_SETTINGS = {
     'SCHEMA_PATH_PREFIX': '/api/',
 }
 
-# CORS settings
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:8081',
-    cast=lambda v: [s.strip() for s in v.split(',')]
+# CORS settings – in dev allow all origins so mobile app / device can call the API
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGINS = (
+    [] if DEBUG else config(
+        'CORS_ALLOWED_ORIGINS',
+        default='http://localhost:3000,http://localhost:8081',
+        cast=lambda v: [s.strip() for s in v.split(',')]
+    )
 )
-
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF settings - required for Django CSRF protection
@@ -199,5 +209,10 @@ CHANNEL_LAYERS = {
 #         },
 #     },
 # }
+
+# Pearl SMS (OTP)
+PEARLSMS_API_KEY = config('PEARLSMS_API_KEY', default='')
+PEARLSMS_SENDER = config('PEARLSMS_SENDER', default='SPPLFW')
+PEARLSMS_BASE_URL = config('PEARLSMS_BASE_URL', default='http://sms.pearlsms.com/public/sms/send')
 
 
