@@ -12,6 +12,9 @@ export interface User {
   is_active: boolean;
   is_staff: boolean;
   is_superuser: boolean;
+  is_approved?: boolean;
+  approved_at?: string | null;
+  approved_by?: number | null;
   date_joined?: string;
   last_login?: string | null;
   created_at: string;
@@ -41,6 +44,7 @@ export interface UserUpdate {
   is_active?: boolean;
   is_staff?: boolean;
   is_superuser?: boolean;
+  is_approved?: boolean;
 }
 
 

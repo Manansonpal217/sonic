@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 export const useUsers = (params?: {
   user_status?: boolean;
+  is_approved?: boolean;
   search?: string;
   ordering?: string;
   page?: number;
@@ -82,6 +83,23 @@ export const useSoftDeleteUsers = () => {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete users');
+    },
+  });
+};
+
+export const useApproveUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, approved }: { id: number; approved: boolean }) =>
+      usersApi.approve(id, approved),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['user', variables.id] });
+      toast.success(`User ${variables.approved ? 'approved' : 'rejected'} successfully`);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update user approval status');
     },
   });
 };

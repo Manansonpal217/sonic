@@ -5,6 +5,7 @@ import type { User, UserCreate, UserUpdate, PaginatedResponse } from '@/types';
 export const usersApi = {
   list: async (params?: {
     user_status?: boolean;
+    is_approved?: boolean;
     search?: string;
     ordering?: string;
     page?: number;
@@ -46,6 +47,14 @@ export const usersApi = {
     await apiClient.delete(getFullUrl(API_ENDPOINTS.usersSoftDelete), {
       data: { user_ids: userIds },
     });
+  },
+
+  approve: async (id: number, approved: boolean = true): Promise<User> => {
+    const response = await apiClient.patch<User>(
+      getFullUrl(`${API_ENDPOINTS.user(id)}/approve/`),
+      { approved }
+    );
+    return response.data;
   },
 };
 
