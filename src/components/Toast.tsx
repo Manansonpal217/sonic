@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, View, StyleSheet } from 'react-native';
 import { Box, Text } from './';
-import { fonts } from '../style';
+import { fonts, palette } from '../style';
 
 interface ToastProps {
 	message: string;
@@ -76,7 +76,7 @@ export const Toast: React.FC<ToastProps> = ({
 					{
 						opacity,
 						transform: [{ translateY }],
-						backgroundColor: type === 'success' ? '#842B25' : '#F44336', // Use red3 color for success
+						backgroundColor: type === 'success' ? palette.primary : '#F44336', // Use primary color for success
 					},
 				]}
 			>

@@ -8,6 +8,7 @@ import { authStore } from '../stores/AuthStore';
 import { goBack, Route, navigate } from '../navigation/AppNavigation';
 import { fonts } from '../style';
 import { Image } from '../components/Image';
+import { Logo } from '../components/Logo';
 import { orderFactory } from '../factory/OrderFactory';
 import { Order, OrderItem } from '../api/OrderApi';
 import { showErrorMessage, getHttp } from '../core';
@@ -159,10 +160,10 @@ const OrderCard: React.FC<{ order: Order; onPress: () => void }> = ({ order, onP
 												resizeMode="cover"
 											/>
 										) : (
-											<Image
-												source={Images.logo}
-												style={{ width: 30, height: 30, opacity: 0.3 }}
-												resizeMode="contain"
+											<Logo
+												width={30}
+												height={27}
+												style={{ opacity: 0.3 }}
 											/>
 										)}
 									</Box>

@@ -11,6 +11,7 @@ import { goBack, navigate, Route } from '../navigation/AppNavigation';
 import { fonts } from '../style';
 import { showErrorMessage, showSuccessMessage } from '../core';
 import { Image } from '../components/Image';
+import { Logo } from '../components/Logo';
 import { Images } from '../assets';
 import { BASE_URL } from '../api/EndPoint';
 import { getHttp } from '../core/Http';
@@ -205,10 +206,9 @@ export const CheckoutScreen = observer(() => {
 														resizeMode="cover"
 													/>
 												) : (
-													<Image
-														source={Images.logo}
-														style={{ width: 60, height: 60 }}
-														resizeMode="contain"
+													<Logo
+														width={60}
+														height={54}
 													/>
 												)}
 											</Box>

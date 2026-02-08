@@ -7,6 +7,7 @@ import { authStore } from '../stores/AuthStore';
 import { goBack, Route, reset, navigate } from '../navigation/AppNavigation';
 import { fonts } from '../style';
 import { Image } from '../components/Image';
+import { Logo } from '../components/Logo';
 import { cartFactory } from '../factory/CartFactory';
 import { CartItem } from '../api/CartApi';
 import { showErrorMessage, showSuccessMessage } from '../core';
@@ -344,10 +345,10 @@ export const CartScreen: React.FC = observer(() => {
 													resizeMode="cover"
 												/>
 											) : (
-												<Image
-													source={Images.logo}
-													style={{ width: 50, height: 50, opacity: 0.3 }}
-													resizeMode="contain"
+												<Logo
+													width={50}
+													height={45}
+													style={{ opacity: 0.3 }}
 												/>
 											)}
 										</Box>

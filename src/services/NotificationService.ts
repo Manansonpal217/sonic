@@ -3,6 +3,8 @@
  * Handles real-time notifications via WebSocket connection
  */
 
+import { WS_BASE_URL } from '../api/EndPoint';
+
 export interface Notification {
   id: number;
   title: string;
@@ -24,8 +26,8 @@ export class NotificationService {
   private connectionCallbacks: ConnectionCallback[] = [];
   private isIntentionalClose: boolean = false;
 
-  constructor(baseUrl: string = 'ws://localhost:8000') {
-    this.url = `${baseUrl}/ws/notifications/`;
+  constructor(wsBaseUrl: string) {
+    this.url = `${wsBaseUrl.replace(/\/$/, '')}/ws/notifications/`;
   }
 
   /**
@@ -214,10 +216,7 @@ let notificationServiceInstance: NotificationService | null = null;
 
 export const getNotificationService = (): NotificationService => {
   if (!notificationServiceInstance) {
-    // Get backend URL from environment or use default
-    const backendUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-    const wsUrl = backendUrl.replace('http', 'ws').replace('/api', '');
-    notificationServiceInstance = new NotificationService(wsUrl);
+    notificationServiceInstance = new NotificationService(WS_BASE_URL);
   }
   return notificationServiceInstance;
 };

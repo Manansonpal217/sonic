@@ -6,8 +6,14 @@ import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppNavigation, setNavigationRef, RootStackParamList } from './src/navigation/AppNavigation';
 import theme from './src/style/Theme';
-import { initHttpClient } from './src/core';
-import { BASE_URL } from './src/api/EndPoint';
+import { initHttpClient, getHttp } from './src/core';
+import { BASE_URL, HEALTH } from './src/api/EndPoint';
+
+// Initialize API client before any screen runs so getHttp() never throws
+initHttpClient(BASE_URL);
+
+// Log API base so we can confirm what the app is using (check Metro terminal)
+console.log('[API] BASE_URL =', BASE_URL);
 
 export default function App() {
 	const [fontsLoaded] = useFonts({
@@ -22,10 +28,17 @@ export default function App() {
 
 	const [navigationReady, setNavigationReady] = useState(false);
 
-	// Initialize HTTP client synchronously before app renders (like in working commit)
-	// This ensures HTTP client is ready before any components try to use it
+	// One-time health check so we see in Metro if the backend is reachable
 	useEffect(() => {
-		initHttpClient(BASE_URL);
+		const healthUrl = HEALTH();
+		console.log('[API] Health check GET', healthUrl);
+		getHttp()
+			.get(healthUrl)
+			.then((r) => {
+				if (r.isSuccess) console.log('[API] Health check OK', r.data);
+				else console.warn('[API] Health check failed:', r.error);
+			})
+			.catch((e) => console.error('[API] Health check error:', e?.message ?? e));
 	}, []);
 
 	if (!fontsLoaded) {

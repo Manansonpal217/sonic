@@ -270,25 +270,12 @@ export const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ onNaviga
 			console.log('Registration API response:', response);
 			
 			if (response.isSuccess) {
-				// Auto-login after successful registration
-				try {
-					console.log('Calling login API after registration');
-					const loginResponse = await authFactory.loginApi(getValues().email, getValues().password);
-					console.log('Login API response:', loginResponse);
-					
-					if (loginResponse.isSuccess) {
-						showSuccessMessage('Registration successful! Welcome! 🎉');
-						// Navigate back to login
-						setTimeout(() => {
-							goBack();
-						}, 1500);
-					} else {
-						showErrorMessage('Registration successful but login failed. Please login manually.');
-					}
-				} catch (loginError: any) {
-					console.error('Login error after registration:', loginError);
-					showErrorMessage('Registration successful but login failed. Please login manually.');
-				}
+				// Show pending approval message instead of auto-login
+				showSuccessMessage('Registration successful! Your account is pending admin approval. You will be notified once approved.');
+				// Navigate back to login screen
+				setTimeout(() => {
+					goBack();
+				}, 2500);
 			} else {
 				showErrorMessage(response.error || 'Registration failed. Please try again.');
 			}

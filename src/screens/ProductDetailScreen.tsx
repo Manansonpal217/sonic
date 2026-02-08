@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, ActivityIndicator, View, Dimensions } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Screen, StatusBarType, Pressable, Image, Toast } from '../components';
+import { Box, Text, Screen, StatusBarType, Pressable, Image, Toast, Logo } from '../components';
 import { goBack, Route, navigate } from '../navigation/AppNavigation';
 import { fonts } from '../style';
 import { getHttp } from '../core';
@@ -333,10 +333,10 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 							resizeMode="cover"
 						/>
 					) : (
-						<Image
-							source={Images.logo}
-							style={{ width: 120, height: 120, opacity: 0.3 }}
-							resizeMode="contain"
+						<Logo
+							width={120}
+							height={108}
+							style={{ opacity: 0.3 }}
 						/>
 					)}
 				</Box>

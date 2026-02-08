@@ -7,6 +7,7 @@ import { Box, Text, Screen, StatusBarType, Pressable } from '../components';
 import { goBack } from '../navigation/AppNavigation';
 import { fonts } from '../style';
 import { Image } from '../components/Image';
+import { Logo } from '../components/Logo';
 import { orderFactory } from '../factory/OrderFactory';
 import { Order, OrderItem } from '../api/OrderApi';
 import { showErrorMessage } from '../core';
@@ -273,10 +274,10 @@ export const OrderDetailScreen: React.FC = observer(() => {
 												resizeMode="cover"
 											/>
 										) : (
-											<Image
-												source={Images.logo}
-												style={{ width: 50, height: 50, opacity: 0.3 }}
-												resizeMode="contain"
+											<Logo
+												width={50}
+												height={45}
+												style={{ opacity: 0.3 }}
 											/>
 										)}
 									</Box>

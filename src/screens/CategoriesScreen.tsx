@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { Box, Text, Image, Screen } from '../components';
 import { categoryApi, type Category } from '../api/CategoryApi';
+import { MEDIA_BASE_URL } from '../api/EndPoint';
 import { useNavigation } from '@react-navigation/native';
 
 export const CategoriesScreen = () => {
@@ -61,7 +62,7 @@ export const CategoriesScreen = () => {
       >
         {item.category_image ? (
           <Image
-            source={{ uri: `${process.env.EXPO_PUBLIC_API_BASE_URL?.replace('/api', '')}/media/${item.category_image}` }}
+            source={{ uri: `${MEDIA_BASE_URL}/${item.category_image}` }}
             style={{ width: 80, height: 80, borderRadius: 8 }}
           />
         ) : (

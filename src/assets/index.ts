@@ -1,7 +1,7 @@
 export const Images = {
 	loginImage: require('./pngs/loginImage.png'),
 	loginImg: require('./pngs/loginImg.png'),
-	logo: require('./pngs/logo.png'),
+	logo: require('./pngs/logo.png'), // Deprecated: Use Logo component from '../components/Logo' instead
 	eys_show: require('./pngs/eyeShow.png'),
 	eys_hide: require('./pngs/eyeHide.png'),
 	// Icons

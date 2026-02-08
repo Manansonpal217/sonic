@@ -27,6 +27,7 @@ try {
 }
 import { Box } from '../Box';
 import { Image } from '../Image';
+import { Logo } from '../Logo';
 import { Images } from '../../assets';
 import { Text } from '../Text';
 import { Pressable } from '../Pressable';
@@ -343,11 +344,9 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 					</AnimatedButton>
 					
 					{/* Logo - positioned right next to hamburger */}
-					<Image 
-						source={Images.logo} 
-						resizeMode="cover" 
-						height={50} 
+					<Logo 
 						width={50} 
+						height={45} 
 					/>
 
 					{/* Right side icons - flex to push to the right */}

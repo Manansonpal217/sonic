@@ -5,6 +5,8 @@ const theme = createTheme({
 	colors: {
 		primary: palette.primary,
 		red3: palette.red3,
+		beige: palette.beige,
+		dark: palette.dark,
 		black: palette.black,
 		gray: palette.gray,
 		gray5: palette.gray5,

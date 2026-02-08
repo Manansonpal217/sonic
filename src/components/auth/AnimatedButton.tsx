@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Animated, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Text } from '../Text';
-import { fonts } from '../../style';
+import { fonts, palette } from '../../style';
 import { createScaleAnimation } from '../../Utils/animations';
 
 export interface AnimatedButtonProps {
@@ -57,11 +57,11 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
 				return {
 					backgroundColor: 'transparent',
 					borderWidth: 2,
-					borderColor: '#842B25',
+					borderColor: palette.primary,
 				};
 			default:
 				return {
-					backgroundColor: '#842B25',
+					backgroundColor: palette.primary,
 					borderWidth: 0,
 				};
 		}
@@ -105,7 +105,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
 				activeOpacity={0.8}
 			>
 				{loading ? (
-					<ActivityIndicator color={getTextColor() === 'white' ? '#FFFFFF' : '#842B25'} size="small" />
+					<ActivityIndicator color={getTextColor() === 'white' ? '#FFFFFF' : palette.primary} size="small" />
 				) : (
 					<>
 						{icon && <Animated.View style={styles.icon}>{icon}</Animated.View>}
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 		alignItems: 'center',
 		flexDirection: 'row',
-		shadowColor: '#842B25',
+		shadowColor: palette.primary,
 		shadowOffset: {
 			width: 0,
 			height: 4,

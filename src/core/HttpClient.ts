@@ -28,25 +28,25 @@ export const getHttpClient = (baseURL: string): AxiosInstance => {
 	});
 
 	http.interceptors.request.use(
-		async (config) => await injectToken(config),
+		async (config) => {
+			const c = await injectToken(config);
+			const url = typeof c.url === 'string' ? c.url : c.baseURL + (c.url || '');
+			console.log('[API] Request', (c.method || 'GET').toUpperCase(), url);
+			return c;
+		},
 		(error) => {
-			console.error('Request Error:', error);
+			console.error('[API] Request Error:', error?.message ?? error);
 			return Promise.reject(error);
 		},
 	);
 
 	http.interceptors.response.use(
 		(response) => {
-			console.log('Response Success:', response.status, response.config.url);
+			console.log('[API] Response', response.status, response.config.url);
 			return response;
 		},
 		(error) => {
-			console.error('Response Error:', {
-				url: error.config?.url,
-				status: error.response?.status,
-				data: error.response?.data,
-				message: error.message,
-			});
+			console.error('[API] Response Error:', error.config?.url, error.response?.status, error.message);
 			return Promise.reject(error);
 		},
 	);

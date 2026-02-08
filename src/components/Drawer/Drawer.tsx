@@ -44,10 +44,11 @@ const getReanimated = () => {
 
 import { Box } from '../Box';
 import { Text } from '../Text';
-import { fonts } from '../../style';
+import { fonts, palette } from '../../style';
 import { Pressable } from '../Pressable';
 import { Images } from '../../assets';
 import { Image } from '../Image';
+import { Logo } from '../Logo';
 import { navigate, reset, Route } from '../../navigation/AppNavigation';
 import { Storage } from '../../core/Storage';
 import { DrawerHeader } from './DrawerHeader';
@@ -296,11 +297,9 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 				paddingVertical="lg"
 				marginTop="m"
 			>
-				<Image 
-					source={Images.logo} 
-					height={120} 
+				<Logo 
 					width={120} 
-					resizeMode="contain"
+					height={108} 
 				/>
 			</Box>
 			
@@ -361,7 +360,7 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 									style={{
 										backgroundColor: isActive ? '#FFF8F5' : 'white',
 										elevation: isActive ? 5 : 3,
-										shadowColor: isActive ? '#842B25' : '#000',
+										shadowColor: isActive ? palette.primary : '#000',
 										shadowOffset: { width: 0, height: isActive ? 3 : 2 },
 										shadowOpacity: isActive ? 0.18 : 0.12,
 										shadowRadius: isActive ? 6 : 4,
@@ -379,7 +378,7 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 											bottom={0}
 											width={4}
 											style={{
-												backgroundColor: '#842B25',
+												backgroundColor: palette.primary,
 												borderTopRightRadius: 4,
 												borderBottomRightRadius: 4,
 											}}
@@ -394,7 +393,7 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 											bottom={0}
 											right={0}
 											style={{
-												backgroundColor: 'rgba(132, 43, 37, 0.03)',
+												backgroundColor: 'rgba(223, 29, 63, 0.03)',
 											}}
 										/>
 									)}
@@ -418,7 +417,7 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 												height={6}
 												borderRadius={3}
 												style={{
-													backgroundColor: '#842B25',
+													backgroundColor: palette.primary,
 													marginRight: 8,
 												}}
 											/>
@@ -426,7 +425,7 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 										<Text 
 											fontFamily={isActive ? fonts.bold : (item.isPrimary ? fonts.semiBold : fonts.medium)} 
 											fontSize={item.isPrimary ? 16 : 15} 
-											style={{ color: isActive ? '#842B25' : 'black' }} 
+											style={{ color: isActive ? palette.primary : 'black' }} 
 											letterSpacing={isActive ? 0.1 : -0.2}
 										>
 											{item.label}
