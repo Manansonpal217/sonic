@@ -144,13 +144,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 			const response = await authFactory.verifyOTP(phoneNumber, otpCode);
 			
 			if (response.isSuccess) {
-				showSuccessMessage('Login successful! Welcome back! 🎉');
-				// Store login data
 				if (response.data) {
 					await authStore.setLoginData(response.data);
 				}
-				// Navigate to dashboard
-				reset({ screenName: Route.Dashboard });
+				const isApproved = response.data?.user?.is_approved === true;
+				if (isApproved) {
+					showSuccessMessage('Login successful! Welcome back! 🎉');
+					reset({ screenName: Route.Dashboard });
+				} else {
+					showSuccessMessage('You are logged in. Your account is pending approval.');
+					reset({ screenName: Route.ApprovalPending });
+				}
 			} else {
 				const err = response.error || '';
 				const isNotRegistered = /no account|not registered|sign up/i.test(err);

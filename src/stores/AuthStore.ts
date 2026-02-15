@@ -78,6 +78,10 @@ class AuthStore {
 		return !!this.loginData?.token;
 	}
 
+	isApproved(): boolean {
+		return this.loginData?.user?.is_approved === true;
+	}
+
 	async loginAgain() {
 		// Check if token exists and is valid
 		const token = await Storage.get<string>('@auth_token');

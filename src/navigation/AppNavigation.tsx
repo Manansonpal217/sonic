@@ -14,6 +14,7 @@ import { CheckoutScreen } from '../screens/CheckoutScreen';
 import { OrderConfirmationScreen } from '../screens/OrderConfirmationScreen';
 import { OrdersScreen } from '../screens/OrdersScreen';
 import { OrderDetailScreen } from '../screens/OrderDetailScreen';
+import { ApprovalPendingScreen } from '../screens/ApprovalPendingScreen';
 import { authStore } from '../stores/AuthStore';
 import { authFactory } from '../factory';
 import { showErrorMessage } from '../core';
@@ -22,6 +23,7 @@ import { CartItem } from '../api/CartApi';
 export enum Route {
 	Login = 'Login',
 	Registration = 'Registration',
+	ApprovalPending = 'ApprovalPending',
 	Dashboard = 'Dashboard',
 	Profile = 'Profile',
 	Cart = 'Cart',
@@ -37,6 +39,7 @@ export enum Route {
 export type RootStackParamList = {
 	[Route.Login]: undefined;
 	[Route.Registration]: undefined;
+	[Route.ApprovalPending]: undefined;
 	[Route.Dashboard]: undefined;
 	[Route.Profile]: undefined;
 	[Route.Cart]: undefined;
@@ -90,7 +93,7 @@ export const AppNavigation = () => {
 
 				// Check if user is already logged in
 				if (authStore.isLogin()) {
-					setInitialRoute(Route.Dashboard);
+					setInitialRoute(authStore.isApproved() ? Route.Dashboard : Route.ApprovalPending);
 					setIsLoading(false);
 					return;
 				}
@@ -109,7 +112,7 @@ export const AppNavigation = () => {
 							response.data,
 							savedCredentials // Keep credentials saved
 						);
-						setInitialRoute(Route.Dashboard);
+						setInitialRoute(authStore.isApproved() ? Route.Dashboard : Route.ApprovalPending);
 					} else {
 						// Auto-login failed, clear saved credentials
 						await authStore.clearLoginData();
@@ -145,6 +148,7 @@ export const AppNavigation = () => {
 		>
 			<Stack.Screen name={Route.Login} component={LoginScreen} />
 			<Stack.Screen name={Route.Registration} component={RegistrationScreen} />
+			<Stack.Screen name={Route.ApprovalPending} component={ApprovalPendingScreen} />
 			<Stack.Screen name={Route.Dashboard} component={DashboardScreen} />
 			<Stack.Screen name={Route.Profile} component={ProfileScreen} />
 			<Stack.Screen name={Route.Cart} component={CartScreen} />
