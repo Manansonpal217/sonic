@@ -1164,14 +1164,7 @@ def verify_otp(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        if not user.is_approved:
-            otp.is_verified = True
-            otp.save()
-            return Response(
-                {'error': 'Your account is pending admin approval. Please wait for approval before logging in.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
+        # Allow login for unapproved users; app will show "Approval Pending" and restrict access
         otp.is_verified = True
         otp.verified_at = timezone.now()
         otp.save()
@@ -1182,7 +1175,13 @@ def verify_otp(request):
         django_login(request, user)
 
         token = secrets.token_urlsafe(32)
+        # Django session may have no key for API requests (e.g. mobile); use token as fallback
         session_key = request.session.session_key
+        if not session_key:
+            request.session.save()
+            session_key = request.session.session_key
+        if not session_key:
+            session_key = token[:40]  # Session.session_key max_length=40
         session, created = Session.objects.get_or_create(
             session_key=session_key,
             defaults={
