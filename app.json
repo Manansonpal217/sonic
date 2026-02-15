@@ -11,9 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "fonts": [
       "src/assets/fonts/NunitoSans_7pt-Regular.ttf",
       "src/assets/fonts/NunitoSans_7pt-Bold.ttf",
@@ -25,7 +23,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sonic.todoapp"
+      "bundleIdentifier": "com.sonic.todoapp",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to scan product QR codes."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -40,4 +41,3 @@
     "scheme": "ivara-app"
   }
 }
-
