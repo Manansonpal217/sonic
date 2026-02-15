@@ -3,6 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.db.models import Max
 from .models import (
     Category, CategoryField, User, Product, ProductVariant, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
+    ProductLead,
     Banners, CMS, NotificationType, NotificationTable,
     OrderEmails, Session, OTP
 )
@@ -278,6 +279,26 @@ class ClientRegistrationSerializer(serializers.ModelSerializer):
         )
         
         return user
+
+
+class ProductLeadSerializer(serializers.ModelSerializer):
+    """Product lead serializer for sales-person-submitted leads from QR scan."""
+    product_name = serializers.CharField(source='product.product_name', read_only=True)
+
+    class Meta:
+        model = ProductLead
+        fields = [
+            'id', 'product', 'product_name', 'company_name', 'phone_number',
+            'user_name', 'email', 'gst', 'address',
+            'submitted_by', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'submitted_by', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'user_name': {'required': False, 'allow_blank': True},
+            'email': {'required': False, 'allow_blank': True},
+            'gst': {'required': False, 'allow_blank': True},
+            'address': {'required': False, 'allow_blank': True},
+        }
 
 
 class ProductSerializer(serializers.ModelSerializer):

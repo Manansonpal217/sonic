@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
-    Category, CategoryField, User, Product, ProductVariant, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
+    Category, CategoryField, User, Product, ProductVariant, ProductFieldValue, ProductLead,
+    Order, OrderItem, CustomizeOrders, AddToCart,
     Banners, CMS, NotificationType, NotificationTable,
     OrderEmails, Session, OTP
 )
@@ -88,6 +89,15 @@ class CustomizeOrdersAdmin(admin.ModelAdmin):
     list_filter = ['order_status', 'created_at']
     search_fields = ['customize_user__username', 'order_description']
     readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(ProductLead)
+class ProductLeadAdmin(admin.ModelAdmin):
+    list_display = ['id', 'product', 'company_name', 'phone_number', 'submitted_by', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['company_name', 'phone_number', 'user_name', 'email', 'product__product_name']
+    readonly_fields = ['created_at', 'updated_at']
+    raw_id_fields = ['product', 'submitted_by']
 
 
 @admin.register(AddToCart)

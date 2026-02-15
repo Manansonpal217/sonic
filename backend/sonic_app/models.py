@@ -366,6 +366,37 @@ class AddToCart(models.Model):
         return f"Cart Item #{self.id} - {self.cart_user.username}"
 
 
+class ProductLead(models.Model):
+    """Lead captured when a sales person scans a product QR and submits company/contact details."""
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='leads'
+    )
+    company_name = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=20)
+    submitted_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='submitted_leads'
+    )
+    user_name = models.CharField(max_length=255, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    gst = models.CharField(max_length=50, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'sonic_app_product_lead'
+        verbose_name = 'Product Lead'
+        verbose_name_plural = 'Product Leads'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Lead #{self.id} - {self.company_name} ({self.product.product_name})"
+
+
 class Banners(models.Model):
     """Promotional banners model"""
     banner_title = models.CharField(max_length=255)

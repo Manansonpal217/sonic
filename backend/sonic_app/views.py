@@ -13,13 +13,15 @@ from drf_spectacular.types import OpenApiTypes
 from .services import NotificationService, OTPSmsService, normalize_phone
 
 from .models import (
-    Category, CategoryField, User, Product, ProductVariant, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
+    Category, CategoryField, User, Product, ProductVariant, ProductFieldValue, ProductLead,
+    Order, OrderItem, CustomizeOrders, AddToCart,
     Banners, CMS, NotificationType, NotificationTable,
     OrderEmails, Session, OTP
 )
 from .serializers import (
     CategorySerializer, CategoryFieldSerializer, UserSerializer, UserCreateSerializer, ProductSerializer,
-    ProductVariantSerializer, ProductFieldValueSerializer, OrderSerializer, OrderItemSerializer, CustomizeOrdersSerializer, AddToCartSerializer,
+    ProductVariantSerializer, ProductFieldValueSerializer, ProductLeadSerializer,
+    OrderSerializer, OrderItemSerializer, CustomizeOrdersSerializer, AddToCartSerializer,
     BannersSerializer, CMSSerializer, NotificationTypeSerializer,
     NotificationTableSerializer, OrderEmailsSerializer, SessionSerializer, ClientRegistrationSerializer, OTPSerializer,
     SendOTPSerializer, VerifyOTPSerializer,
@@ -389,6 +391,31 @@ class ProductViewSet(viewsets.ModelViewSet):
             deleted_at=timezone.now()
         )
         return Response({'message': 'Products soft deleted successfully'}, status=status.HTTP_200_OK)
+
+
+class ProductLeadViewSet(viewsets.ModelViewSet):
+    """Product leads from QR scan. Only staff users can create; list returns leads submitted by current user."""
+    serializer_class = ProductLeadSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post']
+
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return ProductLead.objects.none()
+        if self.request.user.is_staff:
+            return ProductLead.objects.all().select_related('product', 'submitted_by').order_by('-created_at')
+        return ProductLead.objects.filter(submitted_by=self.request.user).select_related('product', 'submitted_by').order_by('-created_at')
+
+    def create(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            return Response(
+                {'error': 'Only staff (sales) users can submit product leads.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        serializer.save(submitted_by=self.request.user)
 
 
 class OrderViewSet(viewsets.ModelViewSet):
