@@ -1,20 +1,42 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useProduct } from '@/lib/hooks/useProducts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Edit } from 'lucide-react';
+import { ArrowLeft, Edit, Download } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, getMediaUrl } from '@/lib/utils/formatters';
 import Image from 'next/image';
+import QRCode from 'qrcode';
+
+function slugify(name: string): string {
+  return name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'product';
+}
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const productId = parseInt(id);
   const { data: product, isLoading } = useProduct(productId);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!product?.id) return;
+    const payload = JSON.stringify({ productId: product.id });
+    QRCode.toDataURL(payload, { width: 256, margin: 2 })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null));
+  }, [product?.id]);
+
+  const handleDownloadQR = () => {
+    if (!qrDataUrl || !product) return;
+    const link = document.createElement('a');
+    link.href = qrDataUrl;
+    link.download = `product-${product.id}-${slugify(product.product_name)}.png`;
+    link.click();
+  };
 
   if (isLoading) {
     return (
@@ -127,6 +149,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Product QR Code</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Sales can scan this QR in the app to open the lead form for this product.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {qrDataUrl ? (
+              <>
+                <div className="flex justify-center bg-white p-4 rounded border">
+                  <img src={qrDataUrl} alt={`QR for ${product.product_name}`} className="w-48 h-48" />
+                </div>
+                <Button onClick={handleDownloadQR} variant="outline" className="w-full">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download QR as PNG
+                </Button>
+              </>
+            ) : (
+              <div className="h-48 flex items-center justify-center text-muted-foreground">
+                Generating QR...
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
