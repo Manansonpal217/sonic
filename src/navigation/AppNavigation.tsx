@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { NavigationContainerRef } from '@react-navigation/native';
 import { View, ActivityIndicator } from 'react-native';
 import { LoginScreen } from '../screens/LoginScreen';
@@ -16,6 +16,40 @@ import { OrdersScreen } from '../screens/OrdersScreen';
 import { OrderDetailScreen } from '../screens/OrderDetailScreen';
 import { ApprovalPendingScreen } from '../screens/ApprovalPendingScreen';
 import { authStore } from '../stores/AuthStore';
+import { ScanQRErrorBoundary } from '../components/ScanQRErrorBoundary';
+
+// Lazy-load screens that use expo-camera so the app entry can register without loading native camera at startup
+const ScanQRScreen = React.lazy(() =>
+	import('../screens/ScanQRScreen').then((m) => ({ default: m.ScanQRScreen }))
+);
+const LeadFormScreen = React.lazy(() =>
+	import('../screens/LeadFormScreen').then((m) => ({ default: m.LeadFormScreen }))
+);
+
+const ScreenFallback = () => (
+	<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+		<ActivityIndicator size="large" color="#842B25" />
+	</View>
+);
+
+function ScanQRScreenWrapper(props: any) {
+	return (
+		<ScanQRErrorBoundary>
+			<Suspense fallback={<ScreenFallback />}>
+				<ScanQRScreen {...props} />
+			</Suspense>
+		</ScanQRErrorBoundary>
+	);
+}
+
+function LeadFormScreenWrapper(props: any) {
+	return (
+		<Suspense fallback={<ScreenFallback />}>
+			<LeadFormScreen {...props} />
+		</Suspense>
+	);
+}
+
 import { authFactory } from '../factory';
 import { showErrorMessage } from '../core';
 import { CartItem } from '../api/CartApi';
@@ -34,6 +68,8 @@ export enum Route {
 	OrderConfirmation = 'OrderConfirmation',
 	Orders = 'Orders',
 	OrderDetail = 'OrderDetail',
+	ScanQR = 'ScanQR',
+	LeadForm = 'LeadForm',
 }
 
 export type RootStackParamList = {
@@ -50,6 +86,8 @@ export type RootStackParamList = {
 	[Route.OrderConfirmation]: { order: any };
 	[Route.Orders]: undefined;
 	[Route.OrderDetail]: { orderId: number };
+	[Route.ScanQR]: undefined;
+	[Route.LeadForm]: { productId: number; productName?: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -159,6 +197,8 @@ export const AppNavigation = () => {
 			<Stack.Screen name={Route.OrderConfirmation} component={OrderConfirmationScreen} />
 			<Stack.Screen name={Route.Orders} component={OrdersScreen} />
 			<Stack.Screen name={Route.OrderDetail} component={OrderDetailScreen} />
+			<Stack.Screen name={Route.ScanQR} component={ScanQRScreenWrapper} />
+			<Stack.Screen name={Route.LeadForm} component={LeadFormScreenWrapper} />
 		</Stack.Navigator>
 	);
 };

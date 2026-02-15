@@ -200,7 +200,8 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 		fetchCategories();
 	}, []);
 
-	// Minimal menu items with route mapping
+	// Minimal menu items with route mapping (sales staff see Scan QR Code)
+	const user = authStore.loginData?.user;
 	const primaryMenuItems = [
 		{
 			label: 'Dashboard',
@@ -222,6 +223,20 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 			svgName: Images.order,
 			isPrimary: true,
 		},
+		...(user?.is_staff
+			? [
+					{
+						label: 'Scan QR Code',
+						route: Route.ScanQR,
+						onPress: () => {
+							onClosePress();
+							navigate({ screenName: Route.ScanQR });
+						},
+						svgName: Images.order,
+						isPrimary: true,
+					},
+				]
+			: []),
 		{
 			label: 'About Us',
 			route: 'AboutUs', // Placeholder
