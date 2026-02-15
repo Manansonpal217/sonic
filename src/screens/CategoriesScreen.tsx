@@ -17,8 +17,7 @@ export const CategoriesScreen = () => {
       if (result.isSuccess && result.data) {
         setCategories(result.data);
       }
-    } catch (error) {
-      console.error('Error loading categories:', error);
+    } catch {
     } finally {
       setLoading(false);
       setRefreshing(false);

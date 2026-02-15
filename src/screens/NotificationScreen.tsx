@@ -53,7 +53,6 @@ export const NotificationScreen = () => {
         setNotifications([]);
       }
     } catch (error) {
-      console.error('Error loading notifications:', error);
       setNotifications([]);
     } finally {
       setLoading(false);

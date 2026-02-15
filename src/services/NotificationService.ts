@@ -67,14 +67,11 @@ export class NotificationService {
             // Handle pong response
             console.log('Pong received');
           }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+        } catch {
         }
       };
 
-      this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
+      this.ws.onerror = () => {};
 
       this.ws.onclose = () => {
         console.log('WebSocket disconnected');
@@ -85,8 +82,7 @@ export class NotificationService {
           this.scheduleReconnect();
         }
       };
-    } catch (error) {
-      console.error('Error creating WebSocket:', error);
+    } catch {
       this.scheduleReconnect();
     }
   }
@@ -184,8 +180,7 @@ export class NotificationService {
     this.notificationCallbacks.forEach(callback => {
       try {
         callback(notification);
-      } catch (error) {
-        console.error('Error in notification callback:', error);
+      } catch {
       }
     });
   }
@@ -197,8 +192,7 @@ export class NotificationService {
     this.connectionCallbacks.forEach(callback => {
       try {
         callback(connected);
-      } catch (error) {
-        console.error('Error in connection callback:', error);
+      } catch {
       }
     });
   }

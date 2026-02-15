@@ -60,9 +60,9 @@ export const OrderConfirmationScreen = () => {
               </Box>
               
               <Box flexDirection="row" justifyContent="space-between" marginBottom="s">
-                <Text variant="body" color="gray">Total Amount:</Text>
+                <Text variant="body" color="gray">Items:</Text>
                 <Text variant="body" fontWeight="bold" color="primary">
-                  ₹{order?.order_total_price || order?.order_price}
+                  {order?.order_items?.length ?? 0} item(s)
                 </Text>
               </Box>
               

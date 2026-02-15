@@ -34,10 +34,7 @@ export const getHttpClient = (baseURL: string): AxiosInstance => {
 			console.log('[API] Request', (c.method || 'GET').toUpperCase(), url);
 			return c;
 		},
-		(error) => {
-			console.error('[API] Request Error:', error?.message ?? error);
-			return Promise.reject(error);
-		},
+		(error) => Promise.reject(error),
 	);
 
 	http.interceptors.response.use(
@@ -45,10 +42,7 @@ export const getHttpClient = (baseURL: string): AxiosInstance => {
 			console.log('[API] Response', response.status, response.config.url);
 			return response;
 		},
-		(error) => {
-			console.error('[API] Response Error:', error.config?.url, error.response?.status, error.message);
-			return Promise.reject(error);
-		},
+		(error) => Promise.reject(error),
 	);
 
 	return http;

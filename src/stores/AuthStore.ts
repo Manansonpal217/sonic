@@ -32,7 +32,6 @@ class AuthStore {
 				});
 			}
 		} catch (error) {
-			console.error('Error loading auth data:', error);
 		} finally {
 			runInAction(() => {
 				this.isInitialized = true;
@@ -71,7 +70,6 @@ class AuthStore {
 			const credentials = await Storage.get<SavedCredentials>(SAVED_CREDENTIALS_KEY);
 			return credentials;
 		} catch (error) {
-			console.error('Error loading saved credentials:', error);
 			return null;
 		}
 	}

@@ -3,11 +3,12 @@ export interface CartItem {
 	cart_user: number;
 	cart_user_username: string;
 	cart_product: string;
+	cart_variant?: number | null;
+	cart_variant_display?: Record<string, string>;
 	cart_quantity: number;
 	cart_status: boolean;
 	product_image?: string | null;
 	cart_product_name?: string;
-	cart_product_price?: number;
 	cart_product_image?: string | null;
 	created_at: string;
 	updated_at: string;
@@ -16,6 +17,7 @@ export interface CartItem {
 export interface AddToCartApiParams {
 	cart_user: number;
 	cart_product: string;
+	cart_variant?: number | null;
 	cart_quantity?: number;
 	cart_status?: boolean;
 }

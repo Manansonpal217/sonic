@@ -100,7 +100,6 @@ export const CheckoutScreen = observer(() => {
 				showErrorMessage(result.error || 'Failed to place order. Please try again.');
 			}
 		} catch (error: any) {
-			console.error('Checkout error:', error);
 			showErrorMessage(error?.message || 'An error occurred during checkout');
 		} finally {
 			setLoading(false);

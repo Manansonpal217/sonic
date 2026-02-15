@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Keyboard, Animated, TouchableOpacity, StyleSheet, View, Dimensions } from 'react-native';
-import { Box, Image, Screen, StatusBarType, Text, Pressable, Logo } from '../components';
+import { Box, Image, Screen, StatusBarType, Text, Pressable, Logo, Toast } from '../components';
 import { Images } from '../assets';
 import { fonts } from '../style';
 import { DeviceHelper } from '../helper/DeviceHelper';
@@ -42,6 +42,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 	const [isLoading, setIsLoading] = useState(false);
 	const [otpSent, setOtpSent] = useState(false);
 	const [resendTimer, setResendTimer] = useState(0);
+	const [toastMessage, setToastMessage] = useState('');
+	const [toastVisible, setToastVisible] = useState(false);
 
 	// Animation refs
 	const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -107,11 +109,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 				setStep('otp');
 				setResendTimer(60); // 60 seconds countdown
 			} else {
-				showErrorMessage(response.error || 'Failed to send OTP. Please try again.');
+				const err = response.error || '';
+				const isNotRegistered = /not registered|sign up/i.test(err);
+				if (isNotRegistered) {
+					setToastMessage("This number isn't registered. Create a new account to get started.");
+					setToastVisible(true);
+				} else {
+					showErrorMessage(err || 'Failed to send OTP. Please try again.');
+				}
 			}
 		} catch (error: any) {
-			console.error('Send OTP error:', error);
-			showErrorMessage(error?.message || 'Failed to send OTP. Please check your connection.');
+			const msg = error?.message || '';
+			const isNotRegistered = /not registered|sign up/i.test(msg);
+			if (isNotRegistered) {
+				setToastMessage("This number isn't registered. Create a new account to get started.");
+				setToastVisible(true);
+			} else {
+				showErrorMessage(msg || 'Failed to send OTP. Please check your connection.');
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -137,11 +152,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 				// Navigate to dashboard
 				reset({ screenName: Route.Dashboard });
 			} else {
-				showErrorMessage(response.error || 'Invalid OTP code. Please try again.');
+				const err = response.error || '';
+				const isNotRegistered = /no account|not registered|sign up/i.test(err);
+				if (isNotRegistered) {
+					setToastMessage("This number isn't registered. Create a new account to get started.");
+					setToastVisible(true);
+				} else {
+					showErrorMessage(err || 'Invalid OTP code. Please try again.');
+				}
 			}
 		} catch (error: any) {
-			console.error('Verify OTP error:', error);
-			showErrorMessage(error?.message || 'Failed to verify OTP. Please try again.');
+			const msg = error?.message || '';
+			const isNotRegistered = /no account|not registered|sign up/i.test(msg);
+			if (isNotRegistered) {
+				setToastMessage("This number isn't registered. Create a new account to get started.");
+				setToastVisible(true);
+			} else {
+				showErrorMessage(msg || 'Failed to verify OTP. Please try again.');
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -399,6 +427,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 					</Animated.View>
 				)}
 			</KeyboardAwareScrollView>
+			<Toast
+				message={toastMessage}
+				type="error"
+				visible={toastVisible}
+				onHide={() => setToastVisible(false)}
+				duration={4500}
+			/>
 		</Screen>
 	);
 };

@@ -21,7 +21,6 @@ class LocationService {
 			const { status } = await Location.requestForegroundPermissionsAsync();
 			return status === 'granted';
 		} catch (error) {
-			console.error('Error requesting location permissions:', error);
 			return false;
 		}
 	}
@@ -68,7 +67,6 @@ class LocationService {
 				address,
 			};
 		} catch (error) {
-			console.error('Error getting location:', error);
 			return null;
 		}
 	}
@@ -99,7 +97,6 @@ class LocationService {
 
 			return false;
 		} catch (error) {
-			console.error('Error updating location:', error);
 			return false;
 		}
 	}

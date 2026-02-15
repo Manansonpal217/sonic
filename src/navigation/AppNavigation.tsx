@@ -119,7 +119,6 @@ export const AppNavigation = () => {
 					setInitialRoute(Route.Login);
 				}
 			} catch (error) {
-				console.error('Error during auto-login:', error);
 				setInitialRoute(Route.Login);
 			} finally {
 				setIsLoading(false);

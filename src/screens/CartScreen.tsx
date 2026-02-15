@@ -28,7 +28,6 @@ export const CartScreen: React.FC = observer(() => {
 			
 			// Check if cartFactory is available
 			if (!cartFactory) {
-				console.error('CartFactory is not initialized');
 				setCartItems([]);
 				return;
 			}
@@ -50,7 +49,6 @@ export const CartScreen: React.FC = observer(() => {
 				setCartItems([]);
 			}
 		} catch (error: any) {
-			console.error('Cart loading error:', error);
 			// Don't show error alert for empty cart - just set empty array
 			if (error?.message && !error.message.includes('empty')) {
 				showErrorMessage(error?.message || 'Failed to load cart items');
@@ -363,6 +361,11 @@ export const CartScreen: React.FC = observer(() => {
 											>
 												{item.cart_product_name || 'Product'}
 											</Text>
+											{item.cart_variant_display && Object.keys(item.cart_variant_display).length > 0 && (
+												<Text fontSize={13} fontFamily={fonts.regular} color="gray">
+													{Object.entries(item.cart_variant_display).map(([k, v]) => `${k}: ${v}`).join(', ')}
+												</Text>
+											)}
 										</Box>
 
 										<Box alignItems="center" justifyContent="center">

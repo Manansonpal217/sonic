@@ -14,10 +14,11 @@ config.resolver = {
 	sourceExts: [...config.resolver.sourceExts, 'svg', 'jsx', 'js', 'ts', 'tsx'],
 };
 
-// Configure server to use port 3000
+// Configure server to use port 3000 and listen on all interfaces so the simulator can connect
 config.server = {
 	...config.server,
 	port: 3000,
+	host: '127.0.0.1',
 };
 
 // Disable Fast Refresh if it's causing issues (uncomment if needed)

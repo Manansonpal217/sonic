@@ -181,7 +181,10 @@ const OrderCard: React.FC<{ order: Order; onPress: () => void }> = ({ order, onP
 											fontFamily={fonts.regular}
 											color="gray"
 										>
-											Qty: {item.quantity} × ₹{item.price}
+											Qty: {item.quantity}
+											{item.product_variant_display && Object.keys(item.product_variant_display).length > 0 && (
+												` · ${Object.entries(item.product_variant_display).map(([k, v]) => `${k}: ${v}`).join(', ')}`
+											)}
 										</Text>
 									</Box>
 								</Box>
@@ -224,14 +227,7 @@ const OrderCard: React.FC<{ order: Order; onPress: () => void }> = ({ order, onP
 							color="gray"
 							marginBottom="xs"
 						>
-							Total Amount
-						</Text>
-						<Text
-							fontSize={18}
-							fontFamily={fonts.bold}
-							color="red3"
-						>
-							₹{order.order_total_price || '0.00'}
+							{order.order_items?.length ?? 0} item(s)
 						</Text>
 					</Box>
 					<Box
@@ -341,7 +337,6 @@ export const OrdersScreen: React.FC = observer(() => {
 				setOrders([]);
 			}
 		} catch (error: any) {
-			console.error('Orders loading error:', error);
 			showErrorMessage(error?.message || 'Failed to load orders');
 			setOrders([]);
 		} finally {

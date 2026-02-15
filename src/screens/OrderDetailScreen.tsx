@@ -94,7 +94,6 @@ export const OrderDetailScreen: React.FC = observer(() => {
 					showErrorMessage(response.error || 'Failed to load order details');
 				}
 			} catch (error: any) {
-				console.error('Order detail loading error:', error);
 				showErrorMessage(error?.message || 'Failed to load order details');
 			} finally {
 				setIsLoading(false);
@@ -298,22 +297,11 @@ export const OrderDetailScreen: React.FC = observer(() => {
 										>
 											Quantity: {item.quantity}
 										</Text>
-										<Text
-											fontSize={16}
-											fontFamily={fonts.semiBold}
-											color="red3"
-										>
-											₹{item.price} each
-										</Text>
-									</Box>
-									<Box alignItems="flex-end" justifyContent="center">
-										<Text
-											fontSize={18}
-											fontFamily={fonts.bold}
-											color="black"
-										>
-											₹{(parseFloat(item.price) * item.quantity).toFixed(2)}
-										</Text>
+										{item.product_variant_display && Object.keys(item.product_variant_display).length > 0 && (
+											<Text fontSize={14} fontFamily={fonts.regular} color="gray">
+												{Object.entries(item.product_variant_display).map(([k, v]) => `${k}: ${v}`).join(', ')}
+											</Text>
+										)}
 									</Box>
 								</Box>
 							))}
@@ -354,7 +342,7 @@ export const OrderDetailScreen: React.FC = observer(() => {
 					</Box>
 				)}
 
-				{/* Order Summary */}
+				{/* Order Summary - no price displayed per plan */}
 				<Box
 					backgroundColor="white"
 					borderRadius={16}
@@ -375,30 +363,9 @@ export const OrderDetailScreen: React.FC = observer(() => {
 					>
 						Order Summary
 					</Text>
-
-					<Box flexDirection="row" justifyContent="space-between" marginBottom="s">
-						<Text fontSize={14} fontFamily={fonts.regular} color="gray">
-							Subtotal
-						</Text>
-						<Text fontSize={14} fontFamily={fonts.regular} color="black">
-							₹{order.order_total_price || '0.00'}
-						</Text>
-					</Box>
-
-					<Box
-						height={1}
-						backgroundColor="gray5"
-						marginVertical="s"
-					/>
-
-					<Box flexDirection="row" justifyContent="space-between" marginTop="s">
-						<Text fontSize={18} fontFamily={fonts.bold} color="black">
-							Total Amount
-						</Text>
-						<Text fontSize={20} fontFamily={fonts.bold} color="red3">
-							₹{order.order_total_price || '0.00'}
-						</Text>
-					</Box>
+					<Text fontSize={14} fontFamily={fonts.regular} color="gray">
+						{order.order_items?.length ?? 0} item(s)
+					</Text>
 				</Box>
 			</ScrollView>
 		</Screen>

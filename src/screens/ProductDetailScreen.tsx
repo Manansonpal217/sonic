@@ -21,14 +21,24 @@ interface ProductFieldValue {
 	field_value: string;
 }
 
+interface ProductVariantItem {
+	id: number;
+	variant_value_1: string;
+	variant_value_2?: string | null;
+	display_values?: Record<string, string>;
+}
+
 interface Product {
 	id: number;
 	product_name: string;
 	product_description?: string;
 	product_image?: string;
-	product_price?: number;
 	product_category_name?: string;
 	field_values?: ProductFieldValue[];
+	variants?: ProductVariantItem[];
+	variant_dimension_labels?: string[];
+	dimension_1_options?: string[];
+	dimension_2_options?: string[];
 }
 
 interface ProductDetailScreenProps {
@@ -48,6 +58,9 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 	const [product, setProduct] = useState<Product | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [quantity, setQuantity] = useState(1);
+	const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+	const [selectedDim1Value, setSelectedDim1Value] = useState<string | null>(null);
+	const [selectedDim2Value, setSelectedDim2Value] = useState<string | null>(null);
 	const [isAddingToCart, setIsAddingToCart] = useState(false);
 	const [isInCart, setIsInCart] = useState(false);
 	
@@ -75,47 +88,91 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 			const result = await http.get<any>(productUrl);
 			
 			if (result.isSuccess && result.data) {
-				setProduct(result.data);
+				const p = result.data;
+				setProduct(p);
+				if (p.variants?.length) {
+					const first = p.variants[0];
+					setSelectedDim1Value(first?.variant_value_1 ?? null);
+					setSelectedDim2Value(first?.variant_value_2 ?? null);
+					setSelectedVariantId(first?.id ?? null);
+				} else {
+					setSelectedDim1Value(null);
+					setSelectedDim2Value(null);
+					setSelectedVariantId(null);
+				}
 			} else {
 				showToastMessage('Failed to load product details', 'error');
 			}
 		} catch (error: any) {
-			console.error('Error loading product:', error);
 			showToastMessage('Failed to load product details', 'error');
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
-	// Check if product is in cart
+	// Check if product (and selected variant if any) is in cart
 	const checkCartStatus = async () => {
 		if (!authStore.isLogin() || !productId) {
 			setIsInCart(false);
 			return;
 		}
-
 		try {
 			const response = await cartFactory.getCartListApi();
 			if (response.isSuccess && response.data) {
 				const cartItems = response.data.results || [];
 				const inCart = cartItems.some((item: any) => {
-					const itemProductId = typeof item.cart_product === 'object' 
-						? item.cart_product?.id 
-						: parseInt(item.cart_product);
-					return itemProductId === productId;
+					const itemProductId = typeof item.cart_product === 'object'
+						? item.cart_product?.id
+						: parseInt(item.cart_product, 10);
+					if (itemProductId !== productId) return false;
+					const itemVariantId = item.cart_variant != null
+						? (typeof item.cart_variant === 'object' ? item.cart_variant?.id : item.cart_variant)
+						: null;
+					const matchVariant = product?.variants?.length
+						? (itemVariantId != null && selectedVariantId != null && itemVariantId === selectedVariantId)
+						: (itemVariantId == null || itemVariantId === null);
+					return matchVariant;
 				});
 				setIsInCart(inCart);
 			}
-		} catch (error) {
-			// Silently handle errors
+		} catch {
 			setIsInCart(false);
 		}
 	};
 
 	useEffect(() => {
 		loadProduct();
-		checkCartStatus();
 	}, [productId]);
+
+	useEffect(() => {
+		checkCartStatus();
+	}, [productId, product?.variants?.length, selectedVariantId]);
+
+	// Resolve selected variant from dimension selections (Size + Karat)
+	useEffect(() => {
+		if (!product?.variants?.length) return;
+		if (product.variants.length === 1 && !selectedDim1Value) return;
+		const hasTwoDims = product.variants.some((v: ProductVariantItem) => v.variant_value_2 != null && v.variant_value_2 !== '');
+		if (hasTwoDims) {
+			if (selectedDim1Value != null && selectedDim2Value != null) {
+				const match = product.variants.find(
+					(v: ProductVariantItem) =>
+						v.variant_value_1 === selectedDim1Value &&
+						(v.variant_value_2 === selectedDim2Value || (v.variant_value_2 == null && selectedDim2Value === ''))
+				);
+				setSelectedVariantId(match?.id ?? null);
+			} else {
+				setSelectedVariantId(null);
+			}
+		} else {
+			if (selectedDim1Value != null) {
+				const match = product.variants.find((v: ProductVariantItem) => v.variant_value_1 === selectedDim1Value);
+				setSelectedVariantId(match?.id ?? null);
+			} else {
+				setSelectedVariantId(null);
+			}
+		}
+	}, [product?.variants, selectedDim1Value, selectedDim2Value]);
 
 	const handleQuantityChange = (change: number) => {
 		setQuantity(prev => Math.max(1, prev + change));
@@ -124,6 +181,10 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 	const handleAddToCart = async () => {
 		if (!product || !authStore.isLogin()) {
 			showToastMessage('Please login to add items to cart', 'error');
+			return;
+		}
+		if (product.variants?.length && selectedVariantId == null) {
+			showToastMessage('Please select a variant (e.g. size)', 'error');
 			return;
 		}
 
@@ -173,11 +234,18 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 			
 			if (cartResponse.isSuccess && cartResponse.data) {
 				const cartItems = cartResponse.data.results || [];
+				const itemVariantId = (item: any) => item.cart_variant != null
+					? (typeof item.cart_variant === 'object' ? item.cart_variant?.id : item.cart_variant)
+					: null;
 				existingCartItem = cartItems.find((item: any) => {
-					const itemProductId = typeof item.cart_product === 'object' 
-						? item.cart_product?.id 
-						: parseInt(item.cart_product);
-					return itemProductId === product.id;
+					const itemProductId = typeof item.cart_product === 'object'
+						? item.cart_product?.id
+						: parseInt(item.cart_product, 10);
+					if (itemProductId !== product.id) return false;
+					if (product.variants?.length) {
+						return itemVariantId(item) === selectedVariantId;
+					}
+					return itemVariantId(item) == null;
 				});
 			}
 
@@ -189,10 +257,10 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 					cart_quantity: newQuantity,
 				});
 			} else {
-				// Add new item to cart
 				result = await cartFactory.addToCartApi({
 					cart_user: userId,
 					cart_product: product.id.toString(),
+					cart_variant: product.variants?.length ? selectedVariantId ?? undefined : undefined,
 					cart_quantity: quantity,
 					cart_status: true,
 				});
@@ -208,11 +276,16 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 					const retryCartResponse = await cartFactory.getCartListApi();
 					if (retryCartResponse.isSuccess && retryCartResponse.data) {
 						const cartItems = retryCartResponse.data.results || [];
-						const retryExistingItem = cartItems.find((item: any) => {
-							const itemProductId = typeof item.cart_product === 'object' 
-								? item.cart_product?.id 
-								: parseInt(item.cart_product);
-							return itemProductId === product.id;
+						const itemVariantId = (item: any) => item.cart_variant != null
+						? (typeof item.cart_variant === 'object' ? item.cart_variant?.id : item.cart_variant)
+						: null;
+					const retryExistingItem = cartItems.find((item: any) => {
+							const itemProductId = typeof item.cart_product === 'object'
+								? item.cart_product?.id
+								: parseInt(item.cart_product, 10);
+							if (itemProductId !== product.id) return false;
+							if (product.variants?.length) return itemVariantId(item) === selectedVariantId;
+							return itemVariantId(item) == null;
 						});
 						
 						if (retryExistingItem) {
@@ -233,7 +306,6 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 				showToastMessage(result.error || 'Failed to add to cart', 'error');
 			}
 		} catch (error: any) {
-			console.error('Error adding to cart:', error);
 			showToastMessage('Failed to add item to cart', 'error');
 		} finally {
 			setIsAddingToCart(false);
@@ -393,6 +465,95 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 						backgroundColor="gray5"
 						marginVertical="m"
 					/>
+
+					{/* Two selectors: Size and Karat (or dimension 1 & 2) */}
+					{product.variants && product.variants.length > 0 && (() => {
+						const dim1Options = product.dimension_1_options
+							?? [...new Set(product.variants.map((v: ProductVariantItem) => v.variant_value_1))];
+						const dim2Options = product.dimension_2_options
+							?? [...new Set(product.variants.map((v: ProductVariantItem) => v.variant_value_2).filter(Boolean))];
+						const label1 = product.variant_dimension_labels?.[0] ?? 'Size';
+						const label2 = product.variant_dimension_labels?.[1] ?? 'Karat';
+						return (
+							<Box marginBottom="m">
+								<Box marginBottom="m">
+									<Text fontSize={16} fontFamily={fonts.semiBold} color="black" marginBottom="s">
+										{label1}
+									</Text>
+									<Box flexDirection="row" flexWrap="wrap">
+										{dim1Options.map((opt: string) => {
+											const isSelected = selectedDim1Value === opt;
+											return (
+												<Pressable
+													key={opt}
+													onPress={() => setSelectedDim1Value(opt)}
+													style={{
+														marginRight: 8,
+														marginBottom: 8,
+														paddingVertical: 10,
+														paddingHorizontal: 14,
+														borderRadius: 8,
+														borderWidth: 1,
+														borderColor: isSelected ? '#842B25' : '#E0E0E0',
+														backgroundColor: isSelected ? 'rgba(132,43,37,0.08)' : 'white',
+													}}
+												>
+													<Text fontSize={14} fontFamily={isSelected ? fonts.semiBold : fonts.regular} color={isSelected ? '#842B25' : 'black'}>
+														{opt}
+													</Text>
+												</Pressable>
+											);
+										})}
+									</Box>
+								</Box>
+								{dim2Options.length > 0 && (
+									<Box marginBottom="m">
+										<Text fontSize={16} fontFamily={fonts.semiBold} color="black" marginBottom="s">
+											{label2}
+										</Text>
+										<Box flexDirection="row" flexWrap="wrap">
+											{dim2Options.map((opt: string) => {
+												const isSelected = selectedDim2Value === opt;
+												return (
+													<Pressable
+														key={opt}
+														onPress={() => setSelectedDim2Value(opt)}
+														style={{
+															marginRight: 8,
+															marginBottom: 8,
+															paddingVertical: 10,
+															paddingHorizontal: 14,
+															borderRadius: 8,
+															borderWidth: 1,
+															borderColor: isSelected ? '#842B25' : '#E0E0E0',
+															backgroundColor: isSelected ? 'rgba(132,43,37,0.08)' : 'white',
+														}}
+													>
+														<Text fontSize={14} fontFamily={isSelected ? fonts.semiBold : fonts.regular} color={isSelected ? '#842B25' : 'black'}>
+															{opt}
+														</Text>
+													</Pressable>
+												);
+											})}
+										</Box>
+									</Box>
+								)}
+								{selectedVariantId && (() => {
+									const sel = product.variants?.find((v: ProductVariantItem) => v.id === selectedVariantId);
+									if (!sel?.display_values) return null;
+									return (
+										<Box flexDirection="row" flexWrap="wrap">
+											{Object.entries(sel.display_values).map(([k, val]: [string, string]) => (
+												<Text key={k} fontSize={14} fontFamily={fonts.regular} color="gray" marginRight="m">
+													{k}: {val}
+												</Text>
+											))}
+										</Box>
+									);
+								})()}
+							</Box>
+						);
+					})()}
 
 					{/* Product Fields Section */}
 					{product.field_values && product.field_values.length > 0 && (

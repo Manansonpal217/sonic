@@ -218,7 +218,6 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 					setCartCount(0);
 				}
 			} catch (error) {
-				console.error('Failed to fetch cart count:', error);
 				setCartCount(0);
 			}
 		} else {

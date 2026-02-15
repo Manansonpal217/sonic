@@ -160,31 +160,22 @@ class CartFactory {
 				const allCartItems = await this.getAllCartItemsApi(userId);
 				console.log('Pre-check: Found', allCartItems.length, 'cart items');
 				
+					const paramVariantId = params.cart_variant != null && params.cart_variant !== '' ? Number(params.cart_variant) : null;
 					const existingItem = allCartItems.find((item: any) => {
-						// cart_product can be an object (ForeignKey) or a number/string
 						let itemProductId: string;
 						if (typeof item.cart_product === 'object' && item.cart_product !== null) {
 							itemProductId = item.cart_product?.id?.toString() || item.cart_product?.toString();
 						} else {
 							itemProductId = item.cart_product?.toString();
 						}
-						
-						// Check if product matches AND if it has the same status we're trying to create
-						// OR if it exists with any status (we'll update it)
+						const itemVariantId = item.cart_variant != null ? (typeof item.cart_variant === 'object' ? item.cart_variant?.id : Number(item.cart_variant)) : null;
 						const productMatches = itemProductId === paramProductId;
 						const userMatches = item.cart_user === userId || item.cart_user?.id === userId;
-						
-						if (productMatches && userMatches) {
-							console.log('Found existing cart item:', {
-								id: item.id,
-								status: item.cart_status,
-								quantity: item.cart_quantity,
-								productId: itemProductId,
-								targetProductId: paramProductId
-							});
+						const variantMatches = (paramVariantId == null && itemVariantId == null) || (paramVariantId != null && paramVariantId === itemVariantId);
+						if (productMatches && userMatches && variantMatches) {
+							console.log('Found existing cart item:', { id: item.id, status: item.cart_status, quantity: item.cart_quantity });
 						}
-						
-						return productMatches && userMatches;
+						return productMatches && userMatches && variantMatches;
 					});
 				
 				if (existingItem) {
@@ -341,7 +332,6 @@ class CartFactory {
 						}
 					} catch (updateError) {
 						// If update fails, return the original error
-						console.error('Error in duplicate recovery:', updateError);
 					}
 				}
 			}
@@ -352,7 +342,6 @@ class CartFactory {
 				error: result.error,
 			};
 		} catch (error: any) {
-			console.error('Exception in addToCartApi:', error);
 			return {
 				isSuccess: false,
 				error: error?.message || 'Failed to add item to cart',

@@ -45,11 +45,9 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 	const [addingToCart, setAddingToCart] = useState<{ [key: number]: boolean }>({});
 	const [cartProductIds, setCartProductIds] = useState<Set<number>>(new Set()); // Track products in cart
 	
-	// Sort and Filter states
-	const [sortBy, setSortBy] = useState<string>('-created_at'); // Default: newest first
-	const [priceFilter, setPriceFilter] = useState<string>('all'); // all, low, medium, high
+	// Sort state (no price filter or price sort - price not shown)
+	const [sortBy, setSortBy] = useState<string>('-created_at');
 	const [showSortModal, setShowSortModal] = useState(false);
-	const [showFilterModal, setShowFilterModal] = useState(false);
 	
 	// Toast state
 	const [toastMessage, setToastMessage] = useState<string>('');
@@ -69,25 +67,8 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 				params.append('category', categoryId.toString());
 			}
 			
-			// Add sort parameter
 			if (sortBy) {
 				params.append('ordering', sortBy);
-			}
-			
-			// Add price filter
-			if (priceFilter !== 'all') {
-				switch (priceFilter) {
-					case 'low':
-						params.append('max_price', '500');
-						break;
-					case 'medium':
-						params.append('min_price', '500');
-						params.append('max_price', '2000');
-						break;
-					case 'high':
-						params.append('min_price', '2000');
-						break;
-				}
 			}
 			
 			// Build URL
@@ -105,7 +86,6 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 				setProducts([]);
 			}
 		} catch (error: any) {
-			console.error('Error loading products:', error);
 			setProducts([]);
 		} finally {
 			setIsLoading(false);
@@ -139,8 +119,7 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 			} else {
 				setCartProductIds(new Set());
 			}
-		} catch (error: any) {
-			console.error('Error loading cart items:', error);
+		} catch {
 			setCartProductIds(new Set());
 		}
 	}, []);
@@ -148,7 +127,7 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 	useEffect(() => {
 		loadProducts();
 		loadCartItems();
-	}, [categoryId, sortBy, priceFilter, loadCartItems]);
+	}, [categoryId, sortBy, loadCartItems]);
 
 	// Reload cart items when login status changes
 	useEffect(() => {
@@ -302,7 +281,6 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 				showToastMessage(result.error || 'Failed to add to cart', 'error');
 			}
 		} catch (error: any) {
-			console.error('Error adding to cart:', error);
 			showToastMessage('Failed to add item to cart', 'error');
 		} finally {
 			setAddingToCart(prev => ({ ...prev, [product.id]: false }));
@@ -568,38 +546,8 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 					<Text fontSize={14} fontFamily={fonts.regular} color="gray" flex={1}>
 						{sortBy === '-created_at' ? 'Newest' :
 						 sortBy === 'created_at' ? 'Oldest' :
-						 sortBy === 'product_price' ? 'Price: Low to High' :
-						 sortBy === '-product_price' ? 'Price: High to Low' :
 						 sortBy === 'product_name' ? 'Name: A-Z' :
 						 sortBy === '-product_name' ? 'Name: Z-A' : 'Newest'}
-					</Text>
-					<Text fontSize={16} color="gray">▼</Text>
-				</Pressable>
-
-				{/* Filter Button */}
-				<Pressable
-					onPress={() => setShowFilterModal(true)}
-					style={{
-						flexDirection: 'row',
-						alignItems: 'center',
-						paddingVertical: 8,
-						paddingHorizontal: 12,
-						backgroundColor: 'white',
-						borderRadius: 8,
-						borderWidth: 1,
-						borderColor: '#E0E0E0',
-						flex: 1,
-						marginLeft: 8,
-					}}
-				>
-					<Text fontSize={14} fontFamily={fonts.semiBold} color="black" marginRight="xs">
-						Filter:
-					</Text>
-					<Text fontSize={14} fontFamily={fonts.regular} color="gray" flex={1}>
-						{priceFilter === 'all' ? 'All Prices' :
-						 priceFilter === 'low' ? 'Under ₹500' :
-						 priceFilter === 'medium' ? '₹500 - ₹2000' :
-						 priceFilter === 'high' ? 'Above ₹2000' : 'All Prices'}
 					</Text>
 					<Text fontSize={16} color="gray">▼</Text>
 				</Pressable>
@@ -638,8 +586,6 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 						{[
 							{ value: '-created_at', label: 'Newest First' },
 							{ value: 'created_at', label: 'Oldest First' },
-							{ value: 'product_price', label: 'Price: Low to High' },
-							{ value: '-product_price', label: 'Price: High to Low' },
 							{ value: 'product_name', label: 'Name: A-Z' },
 							{ value: '-product_name', label: 'Name: Z-A' },
 						].map((option) => (
@@ -664,72 +610,6 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 										{option.label}
 									</Text>
 									{sortBy === option.value && (
-										<Text fontSize={18} color="red3">✓</Text>
-									)}
-								</Box>
-							</Pressable>
-						))}
-					</Box>
-				</View>
-			</Modal>
-
-			{/* Filter Modal */}
-			<Modal
-				visible={showFilterModal}
-				transparent={true}
-				animationType="slide"
-				onRequestClose={() => setShowFilterModal(false)}
-			>
-				<View
-					style={{
-						flex: 1,
-						backgroundColor: 'rgba(0,0,0,0.5)',
-						justifyContent: 'flex-end',
-					}}
-				>
-					<Box
-						backgroundColor="white"
-						borderTopLeftRadius={20}
-						borderTopRightRadius={20}
-						padding="m"
-						paddingTop="xl"
-					>
-						<Box flexDirection="row" justifyContent="space-between" alignItems="center" marginBottom="m">
-							<Text fontSize={20} fontFamily={fonts.bold} color="black">
-								Filter by Price
-							</Text>
-							<Pressable onPress={() => setShowFilterModal(false)}>
-								<Text fontSize={18} color="gray">✕</Text>
-							</Pressable>
-						</Box>
-
-						{[
-							{ value: 'all', label: 'All Prices' },
-							{ value: 'low', label: 'Under ₹500' },
-							{ value: 'medium', label: '₹500 - ₹2000' },
-							{ value: 'high', label: 'Above ₹2000' },
-						].map((option) => (
-							<Pressable
-								key={option.value}
-								onPress={() => {
-									setPriceFilter(option.value);
-									setShowFilterModal(false);
-								}}
-								style={{
-									paddingVertical: 16,
-									borderBottomWidth: 1,
-									borderBottomColor: '#F0F0F0',
-								}}
-							>
-								<Box flexDirection="row" justifyContent="space-between" alignItems="center">
-									<Text
-										fontSize={16}
-										fontFamily={priceFilter === option.value ? fonts.bold : fonts.regular}
-										color={priceFilter === option.value ? 'red3' : 'black'}
-									>
-										{option.label}
-									</Text>
-									{priceFilter === option.value && (
 										<Text fontSize={18} color="red3">✓</Text>
 									)}
 								</Box>

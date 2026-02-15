@@ -280,7 +280,6 @@ export const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ onNaviga
 				showErrorMessage(response.error || 'Registration failed. Please try again.');
 			}
 		} catch (error: any) {
-			console.error('Registration error:', error);
 			showErrorMessage(error?.message || 'Registration failed. Please check your connection and try again.');
 		} finally {
 			setIsLoading(false);

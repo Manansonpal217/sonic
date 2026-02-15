@@ -113,14 +113,15 @@ const styles = StyleSheet.create({
 	},
 	toast: {
 		borderRadius: 12,
-		marginHorizontal: 16,
+		marginHorizontal: 12,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 4 },
 		shadowOpacity: 0.3,
 		shadowRadius: 8,
 		elevation: 8,
-		minWidth: 200,
-		maxWidth: '90%',
+		minWidth: 280,
+		width: '94%',
+		maxWidth: '94%',
 	},
 });
 
