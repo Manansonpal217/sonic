@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useUsers, useDeleteUser, useApproveUser } from '@/lib/hooks/useUsers';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,9 +28,17 @@ import { formatDate } from '@/lib/utils/formatters';
 import Link from 'next/link';
 
 export default function UsersPage() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [approvalFilter, setApprovalFilter] = useState<'all' | 'pending' | 'approved'>('all');
+
+  useEffect(() => {
+    if (searchParams.get('pending') === '1') {
+      setApprovalFilter('pending');
+    }
+  }, [searchParams]);
+
   const { data, isLoading } = useUsers({ 
     search, 
     page, 

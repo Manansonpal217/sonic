@@ -51,7 +51,7 @@ export const usersApi = {
 
   approve: async (id: number, approved: boolean = true): Promise<User> => {
     const response = await apiClient.patch<User>(
-      getFullUrl(`${API_ENDPOINTS.user(id)}/approve/`),
+      getFullUrl(`${API_ENDPOINTS.user(id)}approve/`),
       { approved }
     );
     return response.data;

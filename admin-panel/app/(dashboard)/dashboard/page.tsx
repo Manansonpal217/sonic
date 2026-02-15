@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Package, ShoppingCart, DollarSign } from 'lucide-react';
+import { Users, Package, ShoppingCart, DollarSign, UserCheck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { usersApi, productsApi, ordersApi } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,6 +13,11 @@ export default function DashboardPage() {
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['users', 'stats'],
     queryFn: () => usersApi.list({ page_size: 1 }),
+  });
+
+  const { data: pendingUsersData, isLoading: pendingLoading } = useQuery({
+    queryKey: ['users', 'pending'],
+    queryFn: () => usersApi.list({ page_size: 1, is_approved: false }),
   });
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
@@ -84,6 +90,27 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground">Welcome to the Sonic Admin Panel</p>
       </div>
+
+      {pendingUsersData && pendingUsersData.count > 0 && (
+        <Link href="/users?pending=1">
+          <Card className="border-amber-200 bg-amber-50/80 hover:bg-amber-50 cursor-pointer transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-amber-800">Pending user approvals</CardTitle>
+              <UserCheck className="h-4 w-4 text-amber-600" />
+            </CardHeader>
+            <CardContent>
+              {pendingLoading ? (
+                <Skeleton className="h-8 w-20" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-amber-800">{pendingUsersData?.count ?? 0}</div>
+                  <p className="text-xs text-amber-700 mt-1">New signups waiting for approval →</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
