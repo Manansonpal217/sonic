@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDate, formatCurrency, getMediaUrl } from '@/lib/utils/formatters';
+import { formatDate, getMediaUrl } from '@/lib/utils/formatters';
 import Image from 'next/image';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -72,8 +72,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-lg">{product.product_name}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Price</p>
-              <p className="text-lg">{formatCurrency(product.product_price)}</p>
+              <p className="text-sm font-medium text-muted-foreground">Weight</p>
+              <p className="text-lg">{product.product_weight != null && product.product_weight !== '' ? product.product_weight : '-'}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Status</p>

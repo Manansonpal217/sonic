@@ -2,7 +2,8 @@ export interface Product {
   id: number;
   product_name: string;
   product_description?: string | null;
-  product_price: string;
+  product_price?: string | null;
+  product_weight?: string | null;
   product_image?: string | null;
   product_form_response?: string | null;
   product_category?: number | null;
@@ -14,12 +15,14 @@ export interface Product {
   created_at: string;
   updated_at: string;
   child_products?: Product[];
+  variants?: { id: number; variant_value_1: string; variant_value_2?: string | null; display_values: Record<string, string> }[];
+  variant_dimension_labels?: string[];
 }
 
 export interface ProductCreate {
   product_name: string;
   product_description?: string | null;
-  product_price: string;
+  product_weight: string;
   product_image?: File | null;
   product_form_response?: string | null;
   product_category?: number | null;
@@ -31,7 +34,7 @@ export interface ProductCreate {
 export interface ProductUpdate {
   product_name?: string;
   product_description?: string | null;
-  product_price?: string;
+  product_weight?: string;
   product_image?: File | null;
   product_form_response?: string | null;
   product_category?: number | null;

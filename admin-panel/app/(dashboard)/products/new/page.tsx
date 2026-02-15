@@ -31,12 +31,14 @@ import { useState, useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import apiClient from '@/lib/api/client';
 import { getFullUrl, API_ENDPOINTS } from '@/lib/api/endpoints';
+import { productVariantsApi } from '@/lib/api/products';
 import { toast } from 'sonner';
+import { Plus, Trash2 } from 'lucide-react';
 
 const productSchema = z.object({
   product_name: z.string().min(1, 'Product name is required'),
   product_description: z.string().optional(),
-  product_price: z.string().min(1, 'Price is required'),
+  product_weight: z.string().min(1, 'Weight is required'),
   product_category: z.string().optional(),
   product_is_parent: z.boolean().optional(),
   product_parent_id: z.string().optional(),
@@ -53,6 +55,9 @@ export default function NewProductPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, string>>({});
+  const [selectedDim1Options, setSelectedDim1Options] = useState<string[]>([]);
+  const [selectedDim2Options, setSelectedDim2Options] = useState<string[]>([]);
+  const [generatedVariants, setGeneratedVariants] = useState<{ variant_value_1: string; variant_value_2: string | null }[]>([]);
 
   const { data: categoryFieldsData } = useCategoryFields({
     category_id: selectedCategory ? parseInt(selectedCategory) : undefined,
@@ -67,6 +72,7 @@ export default function NewProductPage() {
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
+      product_weight: '',
       product_status: true,
       product_is_parent: false,
       product_parent_id: undefined,
@@ -89,7 +95,59 @@ export default function NewProductPage() {
     const categoryValue = value || '';
     setSelectedCategory(categoryValue);
     setValue('product_category', categoryValue);
-    setDynamicFieldValues({}); // Reset dynamic field values
+    setDynamicFieldValues({});
+    setSelectedDim1Options([]);
+    setSelectedDim2Options([]);
+    setGeneratedVariants([]);
+  };
+
+  const variantDimensionFields = (categoryFieldsData?.results || [])
+    .filter((f: { is_variant_dimension?: boolean; field_type?: string }) => f.is_variant_dimension && f.field_type === 'select')
+    .sort((a: { variant_order?: number | null }, b: { variant_order?: number | null }) =>
+      (a.variant_order ?? 99) - (b.variant_order ?? 99)
+    );
+  const hasVariantDimensions = variantDimensionFields.length >= 1;
+
+  const dim1Options: string[] = (() => {
+    if (!variantDimensionFields[0]?.field_options) return [];
+    try {
+      const arr = typeof variantDimensionFields[0].field_options === 'string'
+        ? JSON.parse(variantDimensionFields[0].field_options) : variantDimensionFields[0].field_options;
+      return Array.isArray(arr) ? arr.map(String) : [];
+    } catch { return []; }
+  })();
+  const dim2Options: string[] = (() => {
+    if (variantDimensionFields.length < 2 || !variantDimensionFields[1]?.field_options) return [];
+    try {
+      const arr = typeof variantDimensionFields[1].field_options === 'string'
+        ? JSON.parse(variantDimensionFields[1].field_options) : variantDimensionFields[1].field_options;
+      return Array.isArray(arr) ? arr.map(String) : [];
+    } catch { return []; }
+  })();
+
+  const toggleDim1 = (opt: string) => {
+    setSelectedDim1Options(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]);
+  };
+  const toggleDim2 = (opt: string) => {
+    setSelectedDim2Options(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]);
+  };
+
+  const handleGenerateAllVariants = () => {
+    if (variantDimensionFields.length === 1) {
+      setGeneratedVariants(selectedDim1Options.map(v => ({ variant_value_1: v, variant_value_2: null })));
+      return;
+    }
+    const combos: { variant_value_1: string; variant_value_2: string | null }[] = [];
+    for (const v1 of selectedDim1Options) {
+      for (const v2 of selectedDim2Options) {
+        combos.push({ variant_value_1: v1, variant_value_2: v2 });
+      }
+    }
+    setGeneratedVariants(combos);
+  };
+
+  const removeGeneratedVariant = (index: number) => {
+    setGeneratedVariants(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleDynamicFieldChange = (fieldId: number, value: string) => {
@@ -100,7 +158,9 @@ export default function NewProductPage() {
   };
 
   const validateDynamicFields = () => {
-    const requiredFields = categoryFieldsData?.results?.filter(f => f.is_required) || [];
+    const requiredFields = (categoryFieldsData?.results || []).filter(
+      (f: { is_required?: boolean; is_variant_dimension?: boolean }) => f.is_required && !f.is_variant_dimension
+    );
     for (const field of requiredFields) {
       if (!dynamicFieldValues[field.id] || dynamicFieldValues[field.id].trim() === '') {
         toast.error(`${field.field_label} is required`);
@@ -110,18 +170,24 @@ export default function NewProductPage() {
     return true;
   };
 
+  const validateVariants = () => {
+    if (!hasVariantDimensions) return true;
+    if (generatedVariants.length === 0) {
+      toast.error('Select options and click "Generate all variant combinations" to create variants.');
+      return false;
+    }
+    return true;
+  };
+
   const onSubmit = async (data: ProductFormData) => {
     try {
-      // Validate dynamic fields
-      if (selectedCategory && !validateDynamicFields()) {
-        return;
-      }
+      if (selectedCategory && !validateDynamicFields()) return;
+      if (hasVariantDimensions && !validateVariants()) return;
 
-      // Create product
       const product = await createProduct.mutateAsync({
         product_name: data.product_name,
         product_description: data.product_description,
-        product_price: data.product_price,
+        product_weight: data.product_weight?.trim() ?? '',
         product_image: imageFile,
         product_category: data.product_category ? parseInt(data.product_category) : null,
         product_is_parent: false,
@@ -129,12 +195,11 @@ export default function NewProductPage() {
         product_status: data.product_status,
       });
 
-      // Save dynamic field values
       if (selectedCategory && categoryFieldsData?.results && categoryFieldsData.results.length > 0) {
-        const fieldValues = categoryFieldsData.results.map(field => ({
+        const fieldValues = categoryFieldsData.results.map((field: { id: number }) => ({
           category_field: field.id,
           field_value: dynamicFieldValues[field.id] || '',
-        })).filter(fv => fv.field_value !== '');
+        })).filter((fv: { field_value: string }) => fv.field_value !== '');
 
         if (fieldValues.length > 0) {
           await apiClient.post(getFullUrl(API_ENDPOINTS.productFieldValuesBulkCreate), {
@@ -142,6 +207,10 @@ export default function NewProductPage() {
             field_values: fieldValues,
           });
         }
+      }
+
+      if (hasVariantDimensions && generatedVariants.length > 0) {
+        await productVariantsApi.bulkCreate(product.id, generatedVariants);
       }
 
       toast.success('Product created successfully');
@@ -334,16 +403,17 @@ export default function NewProductPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="product_price">Price *</Label>
+                <Label htmlFor="product_weight">Weight *</Label>
                 <Input
-                  id="product_price"
+                  id="product_weight"
                   type="number"
-                  step="0.01"
-                  {...register('product_price')}
+                  step="0.001"
+                  {...register('product_weight')}
                   disabled={isSubmitting}
+                  placeholder="e.g. 10.5"
                 />
-                {errors.product_price && (
-                  <p className="text-sm text-red-500">{errors.product_price.message}</p>
+                {errors.product_weight && (
+                  <p className="text-sm text-red-500">{errors.product_weight.message}</p>
                 )}
               </div>
 
@@ -367,13 +437,108 @@ export default function NewProductPage() {
                 )}
               </div>
 
-              {/* Dynamic Fields */}
-              {selectedCategory && categoryFieldsData?.results && categoryFieldsData.results.length > 0 && (
+              {/* Dynamic Fields (non-variant only in this section) */}
+              {selectedCategory && categoryFieldsData?.results && categoryFieldsData.results.filter((f: { is_variant_dimension?: boolean }) => !f.is_variant_dimension).length > 0 && (
                 <>
                   <div className="md:col-span-2 border-t pt-4">
                     <h3 className="text-lg font-semibold mb-4">Additional Fields</h3>
                   </div>
-                  {categoryFieldsData.results.map(field => renderDynamicField(field))}
+                  {categoryFieldsData.results.filter((f: { is_variant_dimension?: boolean }) => !f.is_variant_dimension).map((field: { id: number }) => renderDynamicField(field))}
+                </>
+              )}
+
+              {/* Variants: option-based, generate all combinations (e.g. Size x Karat) */}
+              {selectedCategory && hasVariantDimensions && (
+                <>
+                  <div className="md:col-span-2 border-t pt-4">
+                    <h3 className="text-lg font-semibold mb-2">Variants</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Choose options per dimension, then generate all combinations (e.g. Size × Karat).
+                    </p>
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="mb-2 block">{variantDimensionFields[0]?.field_label ?? 'Dimension 1'}</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {dim1Options.map((opt) => (
+                            <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox
+                                checked={selectedDim1Options.includes(opt)}
+                                onCheckedChange={() => toggleDim1(opt)}
+                              />
+                              <span className="text-sm">{opt}</span>
+                            </label>
+                          ))}
+                          {dim1Options.length === 0 && (
+                            <p className="text-sm text-muted-foreground">Add Options (JSON array) to the category field.</p>
+                          )}
+                        </div>
+                      </div>
+                      {variantDimensionFields.length >= 2 && (
+                        <div>
+                          <Label className="mb-2 block">{variantDimensionFields[1]?.field_label ?? 'Dimension 2'}</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {dim2Options.map((opt) => (
+                              <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                                <Checkbox
+                                  checked={selectedDim2Options.includes(opt)}
+                                  onCheckedChange={() => toggleDim2(opt)}
+                                />
+                                <span className="text-sm">{opt}</span>
+                              </label>
+                            ))}
+                            {dim2Options.length === 0 && (
+                              <p className="text-sm text-muted-foreground">Add Options to the category field.</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleGenerateAllVariants}
+                        disabled={
+                          selectedDim1Options.length === 0 ||
+                          (variantDimensionFields.length >= 2 && selectedDim2Options.length === 0)
+                        }
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Generate all variant combinations
+                      </Button>
+                      {generatedVariants.length > 0 && (
+                        <div>
+                          <Label className="mb-2 block">Generated ({generatedVariants.length} variant(s))</Label>
+                          <div className="border rounded-md max-h-48 overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b bg-muted/50">
+                                  <th className="text-left p-2">{variantDimensionFields[0]?.field_label ?? 'Dim 1'}</th>
+                                  {variantDimensionFields.length >= 2 && (
+                                    <th className="text-left p-2">{variantDimensionFields[1]?.field_label ?? 'Dim 2'}</th>
+                                  )}
+                                  <th className="w-10 p-2" />
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {generatedVariants.map((v, index) => (
+                                  <tr key={index} className="border-b last:border-0">
+                                    <td className="p-2">{v.variant_value_1}</td>
+                                    {variantDimensionFields.length >= 2 && (
+                                      <td className="p-2">{v.variant_value_2 ?? '-'}</td>
+                                    )}
+                                    <td className="p-2">
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => removeGeneratedVariant(index)}>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </>
               )}
 

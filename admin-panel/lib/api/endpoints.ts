@@ -30,7 +30,10 @@ export const API_ENDPOINTS = {
   productsSoftDelete: '/api/products/soft_delete/',
   productFieldValues: '/api/product-field-values/',
   productFieldValuesBulkCreate: '/api/product-field-values/bulk_create/',
-  
+  productVariants: '/api/product-variants/',
+  productVariant: (id: number) => `/api/product-variants/${id}/`,
+  productVariantsBulk: (productId: number) => `/api/products/${productId}/variants/bulk/`,
+
   // Orders
   orders: '/api/orders/',
   order: (id: number) => `/api/orders/${id}/`,

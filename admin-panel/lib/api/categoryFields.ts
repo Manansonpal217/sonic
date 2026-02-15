@@ -13,6 +13,8 @@ export interface CategoryField {
   display_order: number;
   placeholder?: string;
   help_text?: string;
+  is_variant_dimension?: boolean;
+  variant_order?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +29,8 @@ export interface CategoryFieldCreate {
   display_order?: number;
   placeholder?: string;
   help_text?: string;
+  is_variant_dimension?: boolean;
+  variant_order?: number | null;
 }
 
 export interface CategoryFieldUpdate {
@@ -38,6 +42,8 @@ export interface CategoryFieldUpdate {
   display_order?: number;
   placeholder?: string;
   help_text?: string;
+  is_variant_dimension?: boolean;
+  variant_order?: number | null;
 }
 
 export interface PaginatedResponse<T> {

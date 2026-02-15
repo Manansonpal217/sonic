@@ -30,7 +30,7 @@ export const productsApi = {
     const formData = new FormData();
     formData.append('product_name', data.product_name);
     if (data.product_description) formData.append('product_description', data.product_description);
-    formData.append('product_price', data.product_price);
+    if (data.product_weight != null && data.product_weight !== '') formData.append('product_weight', data.product_weight);
     if (data.product_image) formData.append('product_image', data.product_image);
     if (data.product_form_response) formData.append('product_form_response', data.product_form_response);
     if (data.product_category !== undefined && data.product_category !== null) {
@@ -56,7 +56,7 @@ export const productsApi = {
     const formData = new FormData();
     if (data.product_name) formData.append('product_name', data.product_name);
     if (data.product_description !== undefined) formData.append('product_description', data.product_description || '');
-    if (data.product_price) formData.append('product_price', data.product_price);
+    if (data.product_weight !== undefined) formData.append('product_weight', data.product_weight ?? '');
     if (data.product_image) formData.append('product_image', data.product_image);
     if (data.product_form_response !== undefined) formData.append('product_form_response', data.product_form_response || '');
     if (data.product_category !== undefined) {
@@ -93,6 +93,26 @@ export const productsApi = {
     await apiClient.delete(getFullUrl(API_ENDPOINTS.productsSoftDelete), {
       data: { product_ids: productIds },
     });
+  },
+};
+
+export const productVariantsApi = {
+  create: async (data: { product: number; variant_value_1: string; variant_value_2?: string | null; price?: number | null; display_order?: number }): Promise<{ id: number }> => {
+    const response = await apiClient.post<{ id: number }>(
+      getFullUrl(API_ENDPOINTS.productVariants),
+      data
+    );
+    return response.data;
+  },
+  bulkCreate: async (productId: number, variants: { variant_value_1: string; variant_value_2?: string | null }[]): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      getFullUrl(API_ENDPOINTS.productVariantsBulk(productId)),
+      { variants }
+    );
+    return response.data;
+  },
+  delete: async (variantId: number): Promise<void> => {
+    await apiClient.delete(getFullUrl(API_ENDPOINTS.productVariant(variantId)));
   },
 };
 

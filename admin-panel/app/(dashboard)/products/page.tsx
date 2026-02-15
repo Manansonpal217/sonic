@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDate, formatCurrency, getMediaUrl } from '@/lib/utils/formatters';
+import { formatDate, getMediaUrl } from '@/lib/utils/formatters';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -64,7 +64,7 @@ export default function ProductsPage() {
             <TableRow>
               <TableHead>Image</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Price</TableHead>
+              <TableHead>Weight</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Parent</TableHead>
               <TableHead>Created</TableHead>
@@ -109,7 +109,7 @@ export default function ProductsPage() {
                     )}
                   </TableCell>
                   <TableCell className="font-medium">{product.product_name}</TableCell>
-                  <TableCell>{formatCurrency(product.product_price)}</TableCell>
+                  <TableCell>{product.product_weight != null && product.product_weight !== '' ? product.product_weight : '-'}</TableCell>
                   <TableCell>
                     <Badge variant={product.product_status ? 'default' : 'secondary'}>
                       {product.product_status ? 'Active' : 'Inactive'}

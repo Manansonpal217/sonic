@@ -47,8 +47,9 @@ export const useUpdateCategoryField = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: CategoryFieldUpdate }) =>
       categoryFieldsApi.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_, { id: fieldId }) => {
       queryClient.invalidateQueries({ queryKey: ['categoryFields'] });
+      queryClient.invalidateQueries({ queryKey: ['categoryField', fieldId] });
       toast.success('Field updated successfully');
     },
     onError: () => {
