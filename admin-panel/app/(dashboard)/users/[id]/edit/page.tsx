@@ -19,6 +19,7 @@ import { useUser, useUpdateUser } from '@/lib/hooks/useUsers';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { useEffect } from 'react';
 
 const userSchema = z.object({
@@ -31,6 +32,7 @@ const userSchema = z.object({
   gst: z.string().optional(),
   address: z.string().optional(),
   user_status: z.boolean().optional(),
+  is_staff: z.boolean().optional(),
 });
 
 type UserFormData = z.infer<typeof userSchema>;
@@ -45,6 +47,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<UserFormData>({
@@ -63,6 +67,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         gst: user.gst || '',
         address: user.address || '',
         user_status: user.user_status,
+        is_staff: user.is_staff ?? false,
       });
     }
   }, [user, reset]);
@@ -192,6 +197,21 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 <Input
                   id="address"
                   {...register('address')}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-4 md:col-span-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="is_staff">Staff (sales)</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Staff users can use Scan QR Code in the app and submit product leads.
+                  </p>
+                </div>
+                <Switch
+                  id="is_staff"
+                  checked={watch('is_staff') ?? false}
+                  onCheckedChange={(checked) => setValue('is_staff', checked)}
                   disabled={isSubmitting}
                 />
               </div>
