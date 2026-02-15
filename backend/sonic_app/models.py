@@ -94,6 +94,8 @@ class CategoryField(models.Model):
     display_order = models.IntegerField(default=0)
     placeholder = models.CharField(max_length=255, null=True, blank=True)
     help_text = models.CharField(max_length=500, null=True, blank=True)
+    is_variant_dimension = models.BooleanField(default=False, help_text='Use as variant dimension (e.g. Size, Karat)')
+    variant_order = models.PositiveSmallIntegerField(null=True, blank=True, help_text='Order of this variant dimension (1, 2, 3, ...)')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_delete = models.BooleanField(default=False)
@@ -120,7 +122,8 @@ class Product(models.Model):
     """Product catalog model"""
     product_name = models.CharField(max_length=255)
     product_description = models.TextField(null=True, blank=True)
-    product_price = models.DecimalField(max_digits=10, decimal_places=2)
+    product_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    product_weight = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, help_text='Weight (required for new products)')
     product_image = models.ImageField(upload_to='products/', null=True, blank=True)
     product_form_response = models.CharField(max_length=500, null=True, blank=True)
     product_category = models.ForeignKey(
@@ -158,6 +161,33 @@ class Product(models.Model):
 
     def __str__(self):
         return self.product_name
+
+
+class ProductVariant(models.Model):
+    """Variant options for a product (e.g. Size + Weight). Max 2 dimensions per category."""
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='variants'
+    )
+    variant_value_1 = models.CharField(max_length=255, help_text='First variant dimension value (e.g. Size)')
+    variant_value_2 = models.CharField(max_length=255, null=True, blank=True, help_text='Second variant dimension value (e.g. Weight)')
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    display_order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'sonic_app_product_variant'
+        verbose_name = 'Product Variant'
+        verbose_name_plural = 'Product Variants'
+        ordering = ['product', 'display_order', 'id']
+
+    def __str__(self):
+        parts = [self.variant_value_1]
+        if self.variant_value_2:
+            parts.append(self.variant_value_2)
+        return f"{self.product.product_name} – " + " / ".join(parts)
 
 
 class ProductFieldValue(models.Model):
@@ -279,8 +309,15 @@ class OrderItem(models.Model):
         on_delete=models.CASCADE,
         related_name='order_items'
     )
+    product_variant = models.ForeignKey(
+        'ProductVariant',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='order_items'
+    )
     quantity = models.IntegerField(default=1)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -298,6 +335,13 @@ class AddToCart(models.Model):
     """Shopping cart model"""
     cart_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart_items')
     cart_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='cart_items')
+    cart_variant = models.ForeignKey(
+        'ProductVariant',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cart_items'
+    )
     cart_quantity = models.IntegerField(default=1)
     cart_status = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -310,7 +354,7 @@ class AddToCart(models.Model):
         verbose_name = 'Cart Item'
         verbose_name_plural = 'Cart Items'
         ordering = ['-created_at']
-        unique_together = ['cart_user', 'cart_product', 'cart_status']
+        unique_together = ['cart_user', 'cart_product', 'cart_variant', 'cart_status']
 
     def soft_delete(self):
         """Soft delete the cart item"""

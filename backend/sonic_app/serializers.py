@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
+from django.db.models import Max
 from .models import (
-    Category, CategoryField, User, Product, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
+    Category, CategoryField, User, Product, ProductVariant, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
     Banners, CMS, NotificationType, NotificationTable,
     OrderEmails, Session, OTP
 )
@@ -49,9 +50,55 @@ class CategoryFieldSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'category', 'category_name', 'field_name', 'field_label',
             'field_type', 'field_options', 'is_required', 'display_order',
-            'placeholder', 'help_text', 'created_at', 'updated_at'
+            'placeholder', 'help_text', 'is_variant_dimension', 'variant_order',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate(self, attrs):
+        """Variant dimensions must be select with options. No limit on how many per category."""
+        is_variant = attrs.get('is_variant_dimension', getattr(self.instance, 'is_variant_dimension', False))
+        if is_variant:
+            category = attrs.get('category') or (self.instance and self.instance.category)
+            if not category:
+                raise serializers.ValidationError({'is_variant_dimension': 'Category is required.'})
+            field_type = attrs.get('field_type', getattr(self.instance, 'field_type', None))
+            if field_type != 'select':
+                raise serializers.ValidationError(
+                    {'field_type': 'Variant dimensions must use field type "Select" so options (e.g. Size 20,21,22) are defined.'}
+                )
+            field_options = attrs.get('field_options') or getattr(self.instance, 'field_options', None)
+            if not field_options:
+                raise serializers.ValidationError(
+                    {'field_options': 'Variant dimensions must have Options (JSON array), e.g. ["20","21","22"].'}
+                )
+            try:
+                import json
+                opts = json.loads(field_options) if isinstance(field_options, str) else field_options
+                if not isinstance(opts, list) or len(opts) == 0:
+                    raise serializers.ValidationError(
+                        {'field_options': 'Options must be a non-empty JSON array, e.g. ["20","21","22"].'}
+                    )
+            except (TypeError, ValueError):
+                raise serializers.ValidationError(
+                    {'field_options': 'Options must be a valid JSON array, e.g. ["20","21","22"].'}
+                )
+            variant_order = attrs.get('variant_order') if 'variant_order' in attrs else (self.instance and self.instance.variant_order)
+            if variant_order is not None and (not isinstance(variant_order, int) or variant_order < 1):
+                raise serializers.ValidationError({'variant_order': 'Must be a positive integer.'})
+        return attrs
+
+    def create(self, validated_data):
+        """Auto-assign variant_order for new variant dimensions when not provided."""
+        if validated_data.get('is_variant_dimension') and validated_data.get('variant_order') is None:
+            category = validated_data['category']
+            max_order = CategoryField.objects.filter(
+                category=category,
+                is_variant_dimension=True,
+                is_delete=False
+            ).aggregate(max_o=Max('variant_order'))['max_o']
+            validated_data['variant_order'] = (max_order or 0) + 1
+        return super().create(validated_data)
 
 
 class ProductFieldValueSerializer(serializers.ModelSerializer):
@@ -67,6 +114,42 @@ class ProductFieldValueSerializer(serializers.ModelSerializer):
             'field_type', 'field_value', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class ProductVariantSerializer(serializers.ModelSerializer):
+    """Product variant serializer; optional display_values with labels from category."""
+    display_values = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductVariant
+        fields = [
+            'id', 'product', 'variant_value_1', 'variant_value_2',
+            'price', 'display_order', 'display_values',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_display_values(self, obj):
+        """Map variant_value_1, variant_value_2 to category variant dimension labels (e.g. Size, Weight)."""
+        if not obj.product_id or not obj.product.product_category_id:
+            return {
+                'dimension_1': obj.variant_value_1,
+                'dimension_2': obj.variant_value_2,
+            }
+        from .models import CategoryField
+        dims = list(
+            CategoryField.objects.filter(
+                category_id=obj.product.product_category_id,
+                is_variant_dimension=True,
+                is_delete=False
+            ).order_by('variant_order', 'display_order', 'id')[:2]
+        )
+        out = {}
+        if len(dims) >= 1:
+            out[dims[0].field_label] = obj.variant_value_1
+        if len(dims) >= 2 and obj.variant_value_2:
+            out[dims[1].field_label] = obj.variant_value_2
+        return out if out else {'dimension_1': obj.variant_value_1, 'dimension_2': obj.variant_value_2}
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -203,17 +286,64 @@ class ProductSerializer(serializers.ModelSerializer):
     product_category_name = serializers.CharField(source='product_category.category_name', read_only=True)
     child_products = serializers.SerializerMethodField()
     field_values = ProductFieldValueSerializer(many=True, read_only=True)
+    variants = ProductVariantSerializer(many=True, read_only=True)
+    variant_dimension_labels = serializers.SerializerMethodField()
+    dimension_1_options = serializers.SerializerMethodField()
+    dimension_2_options = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
-            'id', 'product_name', 'product_description', 'product_price',
+            'id', 'product_name', 'product_description', 'product_price', 'product_weight',
             'product_image', 'product_form_response', 'product_category',
             'product_category_name', 'product_is_parent',
             'product_parent_id', 'product_parent_name', 'product_status',
-            'created_at', 'updated_at', 'child_products', 'field_values'
+            'created_at', 'updated_at', 'child_products', 'field_values',
+            'variants', 'variant_dimension_labels', 'dimension_1_options', 'dimension_2_options'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'product_price': {'required': False, 'allow_null': True},
+            'product_weight': {'required': False, 'allow_null': True},
+        }
+
+    def validate(self, attrs):
+        """Require product_weight on create. Normalize empty string to None for DecimalField."""
+        pw = attrs.get('product_weight')
+        if pw is not None and isinstance(pw, str) and not str(pw).strip():
+            attrs['product_weight'] = None
+        if not self.instance:
+            if attrs.get('product_weight') is None or attrs.get('product_weight') == '':
+                raise serializers.ValidationError({'product_weight': 'Weight is required.'})
+        return attrs
+
+    def get_variant_dimension_labels(self, obj):
+        """Return labels for variant dimensions (e.g. Size, Weight) from category. Max 2."""
+        if not obj.product_category_id:
+            return []
+        from .models import CategoryField
+        return list(
+            CategoryField.objects.filter(
+                category_id=obj.product_category_id,
+                is_variant_dimension=True,
+                is_delete=False
+            ).order_by('variant_order', 'display_order', 'id').values_list('field_label', flat=True)[:2]
+        )
+
+    def get_dimension_1_options(self, obj):
+        """Unique values for first variant dimension from this product's variants."""
+        if not hasattr(obj, 'variants') or not obj.variants.exists():
+            return []
+        return list(obj.variants.order_by('variant_value_1').values_list('variant_value_1', flat=True).distinct())
+
+    def get_dimension_2_options(self, obj):
+        """Unique values for second variant dimension from this product's variants."""
+        if not hasattr(obj, 'variants') or not obj.variants.exists():
+            return []
+        return list(
+            obj.variants.filter(variant_value_2__isnull=False).exclude(variant_value_2='')
+            .order_by('variant_value_2').values_list('variant_value_2', flat=True).distinct()
+        )
 
     def to_representation(self, instance):
         """Convert relative image URLs to absolute URLs"""
@@ -243,14 +373,20 @@ class OrderItemSerializer(serializers.ModelSerializer):
     """Order item serializer"""
     product_name = serializers.CharField(source='product.product_name', read_only=True)
     product_image = serializers.ImageField(source='product.product_image', read_only=True)
+    product_variant_display = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
         fields = [
-            'id', 'order', 'product', 'product_name', 'product_image',
-            'quantity', 'price', 'created_at', 'updated_at'
+            'id', 'order', 'product', 'product_variant', 'product_name', 'product_image',
+            'product_variant_display', 'quantity', 'price', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_product_variant_display(self, obj):
+        if obj.product_variant_id:
+            return ProductVariantSerializer(obj.product_variant).data.get('display_values', {})
+        return None
 
     def to_representation(self, instance):
         """Convert relative image URLs to absolute URLs"""
@@ -321,21 +457,26 @@ class CustomizeOrdersSerializer(serializers.ModelSerializer):
 
 
 class AddToCartSerializer(serializers.ModelSerializer):
-    """Add to Cart serializer"""
+    """Add to Cart serializer. Price not exposed (plan: do not show price)."""
     cart_user_username = serializers.CharField(source='cart_user.username', read_only=True)
     cart_product_name = serializers.CharField(source='cart_product.product_name', read_only=True)
-    cart_product_price = serializers.DecimalField(source='cart_product.product_price', max_digits=10, decimal_places=2, read_only=True)
     cart_product_image = serializers.ImageField(source='cart_product.product_image', read_only=True)
+    cart_variant_display = serializers.SerializerMethodField()
 
     class Meta:
         model = AddToCart
         fields = [
-            'id', 'cart_user', 'cart_user_username', 'cart_product',
-            'cart_product_name', 'cart_product_price', 'cart_product_image',
+            'id', 'cart_user', 'cart_user_username', 'cart_product', 'cart_variant',
+            'cart_product_name', 'cart_product_image', 'cart_variant_display',
             'cart_quantity', 'cart_status',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_cart_variant_display(self, obj):
+        if obj.cart_variant_id:
+            return ProductVariantSerializer(obj.cart_variant).data.get('display_values', {})
+        return None
 
     def to_representation(self, instance):
         """Convert relative image URLs to absolute URLs"""

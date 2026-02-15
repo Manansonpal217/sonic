@@ -18,6 +18,17 @@ class SendOTPTests(TestCase):
     @patch('sonic_app.views.OTPSmsService.send_otp')
     def test_send_otp_valid_phone_returns_200_and_creates_otp(self, mock_send):
         mock_send.return_value = {'success': True, 'message': 'SMS sent'}
+        # OTP is only sent for registered users
+        user = User.objects.create_user(
+            username='user9876543210',
+            email='u9876@example.com',
+            password='dummypass',
+            phone_number='9876543210',
+            is_approved=True,
+            is_delete=False,
+        )
+        user.set_unusable_password()
+        user.save()
         response = self.client.post(
             self.send_otp_url,
             {'phone_number': '9876543210'},
@@ -45,11 +56,32 @@ class SendOTPTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_send_otp_unregistered_phone_returns_400(self):
+        """New phone numbers must sign up first; send_otp rejects unregistered numbers."""
+        response = self.client.post(
+            self.send_otp_url,
+            {'phone_number': '8888777766'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.data)
+        self.assertIn('sign up', response.data['error'].lower())
+
     @patch('sonic_app.views.OTPSmsService.send_otp')
     def test_send_otp_rate_limit_returns_429_after_max_sends(self, mock_send):
         mock_send.return_value = {'success': True}
         from sonic_app.views import MAX_OTP_SENDS_PER_HOUR
         phone = '9999888877'
+        user = User.objects.create_user(
+            username='user9999888877',
+            email='u9999@example.com',
+            password='dummypass',
+            phone_number=phone,
+            is_approved=True,
+            is_delete=False,
+        )
+        user.set_unusable_password()
+        user.save()
         for _ in range(MAX_OTP_SENDS_PER_HOUR):
             self.client.post(
                 self.send_otp_url,
@@ -154,9 +186,8 @@ class VerifyOTPTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.data)
 
-    @patch('sonic_app.views.OTPSmsService.send_otp')
-    def test_verify_otp_creates_new_user_when_no_user_exists(self, mock_send):
-        mock_send.return_value = {'success': True}
+    def test_verify_otp_returns_400_when_no_user_exists(self):
+        """New phone numbers must sign up first; verify_otp does not auto-create users."""
         phone = '7777666655'
         self._create_otp(phone, '111222')
         response = self.client.post(
@@ -164,14 +195,10 @@ class VerifyOTPTests(TestCase):
             {'phone_number': phone, 'otp_code': '111222'},
             format='json',
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('token', response.data)
-        user = User.objects.get(phone_number=phone)
-        self.assertTrue(user.is_approved)
-        self.assertTrue(user.is_phone_verified)
-        session = Session.objects.filter(session_user=user).first()
-        self.assertIsNotNone(session)
-        self.assertEqual(session.auth_token, response.data['token'])
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.data)
+        self.assertIn('sign up', response.data['error'].lower())
+        self.assertFalse(User.objects.filter(phone_number=phone).exists())
 
     @patch('sonic_app.views.OTPSmsService.send_otp')
     def test_verify_otp_unapproved_user_returns_403(self, mock_send):

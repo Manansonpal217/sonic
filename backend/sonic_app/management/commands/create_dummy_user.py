@@ -108,7 +108,7 @@ class Command(BaseCommand):
         for i in range(random.randint(2, 3)):
             # Select random products for this order
             order_products = random.sample(list(products), min(3, products.count()))
-            total_price = sum(p.product_price for p in order_products)
+            total_price = sum((p.product_price or Decimal('0')) for p in order_products)
             
             order = Order.objects.create(
                 order_user_id=user.id,
@@ -125,7 +125,7 @@ class Command(BaseCommand):
                     order=order,
                     product=product,
                     quantity=random.randint(1, 2),
-                    price=product.product_price
+                    price=product.product_price or Decimal('0')
                 )
             
             self.stdout.write(

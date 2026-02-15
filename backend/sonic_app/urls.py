@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.routers import DefaultRouter
 from .views import (
     CategoryViewSet, CategoryFieldViewSet, UserViewSet, ProductViewSet,
-    ProductFieldValueViewSet, OrderViewSet,
+    ProductVariantViewSet, ProductFieldValueViewSet, OrderViewSet,
     CustomizeOrdersViewSet, AddToCartViewSet, BannersViewSet,
     CMSViewSet, NotificationTypeViewSet, NotificationTableViewSet,
     OrderEmailsViewSet, SessionViewSet, client_login, client_registration,
@@ -15,6 +15,7 @@ router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'category-fields', CategoryFieldViewSet, basename='category-field')
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'products', ProductViewSet, basename='product')
+router.register(r'product-variants', ProductVariantViewSet, basename='product-variant')
 router.register(r'product-field-values', ProductFieldValueViewSet, basename='product-field-value')
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'customize-orders', CustomizeOrdersViewSet, basename='customize-order')

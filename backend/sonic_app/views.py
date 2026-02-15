@@ -13,13 +13,13 @@ from drf_spectacular.types import OpenApiTypes
 from .services import NotificationService, OTPSmsService, normalize_phone
 
 from .models import (
-    Category, CategoryField, User, Product, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
+    Category, CategoryField, User, Product, ProductVariant, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
     Banners, CMS, NotificationType, NotificationTable,
     OrderEmails, Session, OTP
 )
 from .serializers import (
     CategorySerializer, CategoryFieldSerializer, UserSerializer, UserCreateSerializer, ProductSerializer,
-    ProductFieldValueSerializer, OrderSerializer, OrderItemSerializer, CustomizeOrdersSerializer, AddToCartSerializer,
+    ProductVariantSerializer, ProductFieldValueSerializer, OrderSerializer, OrderItemSerializer, CustomizeOrdersSerializer, AddToCartSerializer,
     BannersSerializer, CMSSerializer, NotificationTypeSerializer,
     NotificationTableSerializer, OrderEmailsSerializer, SessionSerializer, ClientRegistrationSerializer, OTPSerializer,
     SendOTPSerializer, VerifyOTPSerializer,
@@ -102,9 +102,9 @@ class CategoryFieldViewSet(viewsets.ModelViewSet):
     queryset = CategoryField.objects.filter(is_delete=False)
     serializer_class = CategoryFieldSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['category', 'field_type', 'is_required']
+    filterset_fields = ['category', 'field_type', 'is_required', 'is_variant_dimension']
     search_fields = ['field_name', 'field_label']
-    ordering_fields = ['display_order', 'created_at', 'field_name']
+    ordering_fields = ['display_order', 'created_at', 'field_name', 'variant_order']
     ordering = ['category', 'display_order']
 
     def get_queryset(self):
@@ -181,6 +181,24 @@ class ProductFieldValueViewSet(viewsets.ModelViewSet):
             'created': created,
             'updated': updated
         }, status=status.HTTP_200_OK)
+
+
+@extend_schema_view(
+    list=extend_schema(summary="List product variants"),
+    create=extend_schema(summary="Create a product variant"),
+    retrieve=extend_schema(summary="Get product variant details"),
+    update=extend_schema(summary="Update product variant"),
+    partial_update=extend_schema(summary="Partially update product variant"),
+    destroy=extend_schema(summary="Delete product variant"),
+)
+class ProductVariantViewSet(viewsets.ModelViewSet):
+    """Product Variant ViewSet with CRUD operations"""
+    queryset = ProductVariant.objects.all()
+    serializer_class = ProductVariantSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['product']
+    ordering_fields = ['display_order', 'id']
+    ordering = ['display_order', 'id']
 
 
 @extend_schema_view(
@@ -291,6 +309,8 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        # One product per catalog entry: exclude child products from list
+        queryset = queryset.filter(product_parent_id__isnull=True)
         
         # Price range filtering
         min_price = self.request.query_params.get('min_price', None)
@@ -335,6 +355,30 @@ class ProductViewSet(viewsets.ModelViewSet):
         children = Product.objects.filter(product_parent_id=product, is_delete=False)
         serializer = self.get_serializer(children, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='variants/bulk')
+    def bulk_create_variants(self, request, pk=None):
+        """Bulk create product variants. Body: { "variants": [ {"variant_value_1": "20", "variant_value_2": "9"}, ... ] }"""
+        product = self.get_object()
+        variants_data = request.data.get('variants', [])
+        if not isinstance(variants_data, list):
+            return Response({'error': 'variants must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+        created = 0
+        for i, v in enumerate(variants_data):
+            val1 = v.get('variant_value_1')
+            val2 = v.get('variant_value_2') if v.get('variant_value_2') not in (None, '') else None
+            if not val1:
+                continue
+            _, was_created = ProductVariant.objects.get_or_create(
+                product=product,
+                variant_value_1=str(val1).strip(),
+                variant_value_2=str(val2).strip() if val2 else None,
+                defaults={'display_order': i}
+            )
+            if was_created:
+                created += 1
+        serializer = ProductSerializer(product, context=self.get_serializer_context())
+        return Response({'message': f'Created {created} variant(s)', 'product': serializer.data}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['delete'])
     def soft_delete(self, request):
@@ -397,8 +441,12 @@ class OrderViewSet(viewsets.ModelViewSet):
             error_msg = 'No items found to checkout' if cart_item_ids else 'Cart is empty'
             return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Calculate total price
-        total_price = sum(item.cart_product.product_price * item.cart_quantity for item in cart_items)
+        # Calculate total price (variant price or product price; 0 if neither set - price not shown in app)
+        def _item_price(item):
+            if item.cart_variant_id and getattr(item.cart_variant, 'price', None) is not None:
+                return (item.cart_variant.price or 0) * item.cart_quantity
+            return (getattr(item.cart_product, 'product_price', None) or 0) * item.cart_quantity
+        total_price = sum(_item_price(item) for item in cart_items)
         
         # Create order
         order = Order.objects.create(
@@ -411,15 +459,19 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
         
         # Create order items from cart items
-        order_items = []
         for cart_item in cart_items:
-            order_item = OrderItem.objects.create(
+            unit_price = None
+            if cart_item.cart_variant_id and getattr(cart_item.cart_variant, 'price', None) is not None:
+                unit_price = cart_item.cart_variant.price
+            else:
+                unit_price = getattr(cart_item.cart_product, 'product_price', None)
+            OrderItem.objects.create(
                 order=order,
                 product=cart_item.cart_product,
+                product_variant=cart_item.cart_variant,
                 quantity=cart_item.cart_quantity,
-                price=cart_item.cart_product.product_price
+                price=unit_price
             )
-            order_items.append(order_item)
         
         # Clear cart (soft delete cart items that were checked out)
         cart_items.update(is_delete=True, deleted_at=timezone.now())
@@ -484,22 +536,27 @@ class AddToCartViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        """Override create to handle duplicate items gracefully, including soft-deleted ones"""
+        """Override create to handle duplicate items gracefully, including soft-deleted ones. Supports cart_variant."""
         cart_user = request.data.get('cart_user')
         cart_product = request.data.get('cart_product')
+        cart_variant = request.data.get('cart_variant')  # optional
         cart_status = request.data.get('cart_status', True)
         cart_quantity = int(request.data.get('cart_quantity', 1))
         
-        # Check if item already exists (including soft-deleted items)
-        # The unique constraint applies even to soft-deleted items
+        # Build lookup: same user, product, variant, status (variant can be null)
+        lookup = dict(
+            cart_user_id=cart_user,
+            cart_product_id=cart_product,
+            cart_status=cart_status,
+            is_delete=False
+        )
+        if cart_variant not in (None, '', []):
+            lookup['cart_variant_id'] = cart_variant
+        else:
+            lookup['cart_variant_id__isnull'] = True
+        
         try:
-            # First check for non-deleted items
-            existing_item = AddToCart.objects.get(
-                cart_user_id=cart_user,
-                cart_product_id=cart_product,
-                cart_status=cart_status,
-                is_delete=False
-            )
+            existing_item = AddToCart.objects.get(**lookup)
             # Item exists and is active, update quantity instead
             existing_item.cart_quantity += cart_quantity
             existing_item.cart_status = True  # Ensure it's active
@@ -508,14 +565,18 @@ class AddToCartViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(existing_item)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except AddToCart.DoesNotExist:
-            # Check for soft-deleted items (they still block unique constraint)
+            soft_lookup = dict(
+                cart_user_id=cart_user,
+                cart_product_id=cart_product,
+                cart_status=cart_status,
+                is_delete=True
+            )
+            if cart_variant not in (None, '', []):
+                soft_lookup['cart_variant_id'] = cart_variant
+            else:
+                soft_lookup['cart_variant_id__isnull'] = True
             try:
-                soft_deleted_item = AddToCart.objects.get(
-                    cart_user_id=cart_user,
-                    cart_product_id=cart_product,
-                    cart_status=cart_status,
-                    is_delete=True
-                )
+                soft_deleted_item = AddToCart.objects.get(**soft_lookup)
                 # Restore and update the soft-deleted item
                 soft_deleted_item.is_delete = False
                 soft_deleted_item.deleted_at = None
@@ -526,17 +587,11 @@ class AddToCartViewSet(viewsets.ModelViewSet):
                 serializer = self.get_serializer(soft_deleted_item)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except AddToCart.DoesNotExist:
-                # Item doesn't exist at all, create new one
-                return super().create(request, *args, **kwargs)
+                pass
+            # Item doesn't exist at all, create new one
+            return super().create(request, *args, **kwargs)
         except AddToCart.MultipleObjectsReturned:
-            # Multiple items found (shouldn't happen due to unique constraint, but handle it)
-            # Try to get non-deleted first
-            existing_item = AddToCart.objects.filter(
-                cart_user_id=cart_user,
-                cart_product_id=cart_product,
-                cart_status=cart_status,
-                is_delete=False
-            ).first()
+            existing_item = AddToCart.objects.filter(**lookup).first()
             
             if existing_item:
                 existing_item.cart_quantity += cart_quantity
@@ -545,14 +600,17 @@ class AddToCartViewSet(viewsets.ModelViewSet):
                 serializer = self.get_serializer(existing_item)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                # Try soft-deleted
-                soft_deleted_item = AddToCart.objects.filter(
+                soft_lookup2 = dict(
                     cart_user_id=cart_user,
                     cart_product_id=cart_product,
                     cart_status=cart_status,
                     is_delete=True
-                ).first()
-                
+                )
+                if cart_variant not in (None, '', []):
+                    soft_lookup2['cart_variant_id'] = cart_variant
+                else:
+                    soft_lookup2['cart_variant_id__isnull'] = True
+                soft_deleted_item = AddToCart.objects.filter(**soft_lookup2).first()
                 if soft_deleted_item:
                     soft_deleted_item.is_delete = False
                     soft_deleted_item.deleted_at = None
@@ -974,6 +1032,13 @@ def send_otp(request):
         )
     phone_number = serializer.validated_data['phone_number']
 
+    # Only allow OTP for registered users; new numbers must sign up first
+    if not User.objects.filter(phone_number=phone_number, is_delete=False).exists():
+        return Response(
+            {'error': 'This phone number is not registered. Please sign up first.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
     # Rate limit: max sends per hour per phone
     since = timezone.now() - timezone.timedelta(hours=1)
     recent_count = OTP.objects.filter(phone_number=phone_number, created_at__gte=since).count()
@@ -1094,23 +1159,10 @@ def verify_otp(request):
         try:
             user = User.objects.get(phone_number=phone_number, is_delete=False, is_active=True)
         except User.DoesNotExist:
-            base = phone_number[-10:] if len(phone_number) >= 10 else phone_number
-            username = f"otp_{base}"
-            if User.objects.filter(username=username, is_delete=False).exists():
-                username = f"otp_{phone_number}"
-            user = User.objects.create_user(
-                username=username,
-                email=f"{username}@sonic.local",
-                password=None,
-                phone_number=phone_number,
-                first_name="",
-                last_name="",
-                is_active=True,
-                is_approved=True,
-                is_delete=False,
+            return Response(
+                {'error': 'No account found for this phone number. Please sign up first.'},
+                status=status.HTTP_400_BAD_REQUEST
             )
-            user.set_unusable_password()
-            user.save()
 
         if not user.is_approved:
             otp.is_verified = True

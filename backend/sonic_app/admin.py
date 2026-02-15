@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
-    Category, CategoryField, User, Product, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
+    Category, CategoryField, User, Product, ProductVariant, ProductFieldValue, Order, OrderItem, CustomizeOrders, AddToCart,
     Banners, CMS, NotificationType, NotificationTable,
     OrderEmails, Session, OTP
 )
@@ -18,11 +18,20 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(CategoryField)
 class CategoryFieldAdmin(admin.ModelAdmin):
-    list_display = ['field_label', 'category', 'field_type', 'is_required', 'display_order', 'created_at']
-    list_filter = ['category', 'field_type', 'is_required', 'created_at']
+    list_display = ['field_label', 'category', 'field_type', 'is_required', 'is_variant_dimension', 'variant_order', 'display_order', 'created_at']
+    list_filter = ['category', 'field_type', 'is_required', 'is_variant_dimension', 'created_at']
     search_fields = ['field_name', 'field_label']
     readonly_fields = ['created_at', 'updated_at']
     ordering = ['category', 'display_order']
+
+
+@admin.register(ProductVariant)
+class ProductVariantAdmin(admin.ModelAdmin):
+    list_display = ['id', 'product', 'variant_value_1', 'variant_value_2', 'display_order', 'created_at']
+    list_filter = ['product', 'created_at']
+    search_fields = ['product__product_name', 'variant_value_1', 'variant_value_2']
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['product', 'display_order']
 
 
 @admin.register(ProductFieldValue)
@@ -53,6 +62,7 @@ class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
     readonly_fields = ['created_at', 'updated_at']
+    raw_id_fields = ['product', 'product_variant']
 
 
 @admin.register(Order)
