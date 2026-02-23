@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Ivara app",
-    "slug": "ivara-app",
+    "name": "INARA",
+    "slug": "inara-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -38,6 +38,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "ivara-app"
+    "scheme": "inara-app"
   }
 }

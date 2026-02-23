@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { formatDate } from '@/lib/utils/formatters';
 
 export default function CartPage() {
@@ -25,12 +26,9 @@ export default function CartPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Cart Items</h1>
-        <p className="text-muted-foreground">View shopping cart items</p>
-      </div>
+      <PageHeader title="Cart Items" description="View shopping cart items" />
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

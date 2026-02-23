@@ -73,7 +73,7 @@ export default function CategoryFieldsPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        <Button className="bg-[#842B25] hover:bg-[#6b231f]" asChild>
+        <Button  asChild>
           <Link href={`/categories/${id}/fields/new`}>
             <Plus className="mr-2 h-4 w-4" />
             Add Field

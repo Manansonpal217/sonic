@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "SonicTodo.app"
-               BlueprintName = "SonicTodo"
-               ReferencedContainer = "container:SonicTodo.xcodeproj">
+               BuildableName = "Ivara.app"
+               BlueprintName = "Ivara"
+               ReferencedContainer = "container:Ivara.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "SonicTodoTests.xctest"
-               BlueprintName = "SonicTodoTests"
-               ReferencedContainer = "container:SonicTodo.xcodeproj">
+               BuildableName = "IvaraTests.xctest"
+               BlueprintName = "IvaraTests"
+               ReferencedContainer = "container:Ivara.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -50,21 +50,14 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <EnvironmentVariables>
-         <EnvironmentVariable
-            key = "RCT_METRO_PORT"
-            value = "3000"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-      </EnvironmentVariables>
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "SonicTodo.app"
-            BlueprintName = "SonicTodo"
-            ReferencedContainer = "container:SonicTodo.xcodeproj">
+            BuildableName = "Ivara.app"
+            BlueprintName = "Ivara"
+            ReferencedContainer = "container:Ivara.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -79,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "SonicTodo.app"
-            BlueprintName = "SonicTodo"
-            ReferencedContainer = "container:SonicTodo.xcodeproj">
+            BuildableName = "Ivara.app"
+            BlueprintName = "Ivara"
+            ReferencedContainer = "container:Ivara.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -11,7 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { formatDate } from '@/lib/utils/formatters';
 
 export default function ProductLeadsPage() {
@@ -25,14 +27,12 @@ export default function ProductLeadsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Product Leads</h1>
-        <p className="text-muted-foreground">
-          Leads submitted from QR code scans by sales staff
-        </p>
-      </div>
+      <PageHeader
+        title="Product Leads"
+        description="Leads submitted from QR code scans by sales staff"
+      />
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -89,25 +89,29 @@ export default function ProductLeadsPage() {
       </div>
 
       {data && data.count > pageSize && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {((page - 1) * pageSize) + 1} to {Math.min(page * pageSize, data.count)} of {data.count} leads
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-lg"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={!data.previous}
-              className="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-lg"
               onClick={() => setPage((p) => p + 1)}
               disabled={!data.next}
-              className="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       )}

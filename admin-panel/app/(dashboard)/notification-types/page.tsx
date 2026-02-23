@@ -129,7 +129,7 @@ export default function NotificationTypesPage() {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#842B25] hover:bg-[#6b231f]" onClick={resetForm}>
+            <Button  onClick={resetForm}>
               <Plus className="mr-2 h-4 w-4" />
               Add Type
             </Button>
@@ -164,7 +164,7 @@ export default function NotificationTypesPage() {
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]">
+                <Button type="submit" >
                   Create Type
                 </Button>
               </DialogFooter>
@@ -294,7 +294,7 @@ export default function NotificationTypesPage() {
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]">
+              <Button type="submit" >
                 Update Type
               </Button>
             </DialogFooter>

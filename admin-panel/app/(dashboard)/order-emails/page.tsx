@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { formatDate } from '@/lib/utils/formatters';
 
 export default function OrderEmailsPage() {
@@ -25,12 +26,9 @@ export default function OrderEmailsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Order Emails</h1>
-        <p className="text-muted-foreground">View order-related email records</p>
-      </div>
+      <PageHeader title="Order Emails" description="View order-related email records" />
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

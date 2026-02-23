@@ -416,7 +416,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]" disabled={isSubmitting}>
+              <Button type="submit"  disabled={isSubmitting}>
                 {isSubmitting ? 'Updating...' : 'Update Product'}
               </Button>
             </div>

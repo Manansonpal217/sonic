@@ -30,20 +30,16 @@ export default function DashboardPage() {
     queryFn: () => ordersApi.list({ page_size: 1 }),
   });
 
-  // Fetch all orders to calculate revenue
   const { data: allOrdersData, isLoading: allOrdersLoading } = useQuery({
     queryKey: ['orders', 'revenue'],
     queryFn: async () => {
-      // Fetch all orders with a large page size
       const response = await ordersApi.list({ page_size: 10000 });
       return response;
     },
   });
 
-  // Calculate total revenue from all orders
   const totalRevenue = useMemo(() => {
     if (!allOrdersData?.results) return 0;
-    
     return allOrdersData.results.reduce((sum, order) => {
       const price = parseFloat(
         (order as any).order_total_price || order.order_price || '0'
@@ -53,47 +49,22 @@ export default function DashboardPage() {
   }, [allOrdersData]);
 
   const stats = [
-    {
-      title: 'Total Users',
-      value: usersData?.count ?? 0,
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      title: 'Total Products',
-      value: productsData?.count ?? 0,
-      icon: Package,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      title: 'Total Orders',
-      value: ordersData?.count ?? 0,
-      icon: ShoppingCart,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
-    {
-      title: 'Revenue',
-      value: formatCurrency(totalRevenue),
-      icon: DollarSign,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-      isLoading: allOrdersLoading,
-    },
+    { title: 'Total Users', value: usersData?.count ?? 0, icon: Users, color: 'text-primary', bgColor: 'bg-primary/10' },
+    { title: 'Total Products', value: productsData?.count ?? 0, icon: Package, color: 'text-chart-2', bgColor: 'bg-chart-2/10' },
+    { title: 'Total Orders', value: ordersData?.count ?? 0, icon: ShoppingCart, color: 'text-chart-4', bgColor: 'bg-chart-4/10' },
+    { title: 'Revenue', value: formatCurrency(totalRevenue), icon: DollarSign, color: 'text-chart-5', bgColor: 'bg-chart-5/10', isLoading: allOrdersLoading },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome to the Sonic Admin Panel</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Dashboard</h1>
+        <p className="mt-1 text-muted-foreground">Welcome to the Inara Admin Panel. Here&apos;s an overview of your business.</p>
       </div>
 
       {pendingUsersData && pendingUsersData.count > 0 && (
         <Link href="/users?pending=1">
-          <Card className="border-amber-200 bg-amber-50/80 hover:bg-amber-50 cursor-pointer transition-colors">
+          <Card className="group cursor-pointer border-amber-200/80 bg-gradient-to-br from-amber-50 to-amber-50/50 hover:from-amber-100/80 hover:to-amber-50/80 transition-all hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-amber-800">Pending user approvals</CardTitle>
               <UserCheck className="h-4 w-4 text-amber-600" />
@@ -115,23 +86,25 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
-          const isLoading = 
+          const isLoading =
             (stat.isLoading !== undefined ? stat.isLoading : false) ||
-            usersLoading || 
-            productsLoading || 
+            usersLoading ||
+            productsLoading ||
             ordersLoading;
 
           return (
-            <Card key={stat.title}>
+            <Card key={stat.title} className="border-border/80 transition-shadow hover:shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <Icon className={`h-4 w-4 ${stat.color}`} />
+                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${stat.bgColor}`}>
+                  <Icon className={`h-4 w-4 ${stat.color}`} />
+                </div>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <Skeleton className="h-8 w-20" />
+                  <Skeleton className="h-8 w-24" />
                 ) : (
-                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
                 )}
               </CardContent>
             </Card>
@@ -139,16 +112,22 @@ export default function DashboardPage() {
         })}
       </div>
 
-      <Card>
+      <Card className="border-border/80">
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
+          <p className="text-sm text-muted-foreground">Track your latest admin actions and updates</p>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">Recent activity will be displayed here.</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="mt-4 text-muted-foreground">Recent activity will be displayed here.</p>
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-

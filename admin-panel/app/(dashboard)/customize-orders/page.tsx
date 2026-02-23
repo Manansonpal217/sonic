@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/utils/formatters';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -55,12 +56,9 @@ export default function CustomizeOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Customize Orders</h1>
-        <p className="text-muted-foreground">Manage customized order requests</p>
-      </div>
+      <PageHeader title="Customize Orders" description="Manage customized order requests" />
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

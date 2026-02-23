@@ -24,13 +24,7 @@
 - (NSURL *)bundleURL
 {
 #if DEBUG
-  // Metro runs on port 3000 (see metro.config.js). Use explicit host so the app finds the bundle
-  // whether launched from Xcode, Expo CLI, or the simulator.
-  return [RCTBundleURLProvider jsBundleURLForBundleRoot:@".expo/.virtual-metro-entry"
-                                         packagerHost:@"127.0.0.1:3000"
-                                            enableDev:YES
-                                   enableMinification:NO
-                                      inlineSourceMap:YES];
+  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@".expo/.virtual-metro-entry"];
 #else
   return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
 #endif

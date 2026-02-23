@@ -29,6 +29,19 @@ function patchDevLauncher() {
   return true;
 }
 
+function patchDevMenuIOS() {
+  const p = path.join(rootDir, 'node_modules', 'expo-dev-menu', 'ios', 'DevMenuViewController.swift');
+  if (!fs.existsSync(p)) return false;
+  let c = fs.readFileSync(p, 'utf8');
+  if (!c.includes('TARGET_IPHONE_SIMULATOR')) return false;
+  c = c.replace(
+    /\s*let isSimulator = TARGET_IPHONE_SIMULATOR > 0\s*/,
+    `\n    #if targetEnvironment(simulator)\n    let isSimulator = true\n    #else\n    let isSimulator = false\n    #endif\n`
+  );
+  fs.writeFileSync(p, c);
+  return true;
+}
+
 function patchDevMenu() {
   const p = path.join(rootDir, 'node_modules', 'expo-dev-menu', 'android', 'build.gradle');
   if (!fs.existsSync(p)) return false;
@@ -55,7 +68,11 @@ if (patchDevLauncher()) {
   n++;
 }
 if (patchDevMenu()) {
-  console.log('patch-expo-compose-plugin: patched expo-dev-menu');
+  console.log('patch-expo-compose-plugin: patched expo-dev-menu (android)');
+  n++;
+}
+if (patchDevMenuIOS()) {
+  console.log('patch-expo-compose-plugin: patched expo-dev-menu (ios TARGET_IPHONE_SIMULATOR)');
   n++;
 }
 if (n === 0) console.log('patch-expo-compose-plugin: no patches needed.');

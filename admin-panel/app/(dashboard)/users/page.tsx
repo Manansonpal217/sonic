@@ -13,18 +13,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit, Trash2, Eye, CheckCircle, XCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/utils/formatters';
+import { PageHeader } from '@/components/layout/PageHeader';
 import Link from 'next/link';
 
 export default function UsersPage() {
@@ -60,25 +53,26 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Users</h1>
-          <p className="text-muted-foreground">Manage user accounts</p>
-        </div>
-        <Button className="bg-[#842B25] hover:bg-[#6b231f]">
-          <Plus className="mr-2 h-4 w-4" />
-          Add User
+      <PageHeader
+        title="Users"
+        description="Manage user accounts"
+      >
+        <Button asChild>
+          <Link href="/users/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Add User
+          </Link>
         </Button>
-      </div>
+      </PageHeader>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 rounded-lg bg-background"
           />
         </div>
         <div className="flex gap-2">
@@ -86,6 +80,7 @@ export default function UsersPage() {
             variant={approvalFilter === 'all' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setApprovalFilter('all')}
+            className="rounded-lg"
           >
             All
           </Button>
@@ -93,6 +88,7 @@ export default function UsersPage() {
             variant={approvalFilter === 'pending' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setApprovalFilter('pending')}
+            className="rounded-lg"
           >
             Pending
           </Button>
@@ -100,13 +96,14 @@ export default function UsersPage() {
             variant={approvalFilter === 'approved' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setApprovalFilter('approved')}
+            className="rounded-lg"
           >
             Approved
           </Button>
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -209,9 +206,8 @@ export default function UsersPage() {
         </Table>
       </div>
 
-      {/* Pagination */}
       {data && data.count > 20 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, data.count)} of {data.count} users
           </p>
@@ -219,6 +215,7 @@ export default function UsersPage() {
             <Button
               variant="outline"
               size="sm"
+              className="rounded-lg"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={!data.previous}
             >
@@ -227,6 +224,7 @@ export default function UsersPage() {
             <Button
               variant="outline"
               size="sm"
+              className="rounded-lg"
               onClick={() => setPage(p => p + 1)}
               disabled={!data.next}
             >

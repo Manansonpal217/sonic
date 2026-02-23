@@ -38,7 +38,7 @@ const bannerSchema = z.object({
   banner_title: z.string().min(1, 'Title is required'),
   banner_product_id: z.string().optional(),
   banner_status: z.boolean().optional(),
-  banner_order: z.coerce.number().optional(),
+  banner_order: z.number().min(0).default(0),
 });
 
 type BannerFormData = z.infer<typeof bannerSchema>;
@@ -67,7 +67,7 @@ export default function EditBannerPage() {
     watch,
     reset,
   } = useForm<BannerFormData>({
-    resolver: zodResolver(bannerSchema),
+    resolver: zodResolver(bannerSchema) as any,
     defaultValues: {
       banner_status: true,
       banner_order: 0,
@@ -230,7 +230,7 @@ export default function EditBannerPage() {
               <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]" disabled={isSubmitting}>
+              <Button type="submit"  disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : 'Save Banner'}
               </Button>
             </div>

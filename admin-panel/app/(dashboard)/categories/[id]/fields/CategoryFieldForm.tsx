@@ -254,7 +254,7 @@ export function CategoryFieldForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]">
+        <Button type="submit" >
           {submitLabel}
         </Button>
       </div>

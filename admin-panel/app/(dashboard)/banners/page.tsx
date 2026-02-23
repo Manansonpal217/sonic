@@ -19,6 +19,7 @@ import { formatDate, getMediaUrl } from '@/lib/utils/formatters';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function BannersPage() {
   const [page, setPage] = useState(1);
@@ -48,20 +49,16 @@ export default function BannersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Banners</h1>
-          <p className="text-muted-foreground">Manage promotional banners</p>
-        </div>
-        <Button className="bg-[#842B25] hover:bg-[#6b231f]" asChild>
+      <PageHeader title="Banners" description="Manage promotional banners">
+        <Button asChild>
           <Link href="/banners/new">
             <Plus className="mr-2 h-4 w-4" />
             Add Banner
           </Link>
         </Button>
-      </div>
+      </PageHeader>
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -106,7 +103,7 @@ export default function BannersPage() {
                         className="rounded object-cover"
                       />
                     ) : (
-                      <div className="h-16 w-24 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                      <div className="h-16 w-24 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
                         No Image
                       </div>
                     )}
@@ -137,7 +134,7 @@ export default function BannersPage() {
                         size="icon"
                         onClick={() => handleDelete(banner.id)}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </TableCell>
@@ -149,7 +146,7 @@ export default function BannersPage() {
       </div>
 
       {data && data.count > 20 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, data.count)} of {data.count} banners
           </p>
@@ -157,6 +154,7 @@ export default function BannersPage() {
             <Button
               variant="outline"
               size="sm"
+              className="rounded-lg"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={!data.previous}
             >
@@ -165,6 +163,7 @@ export default function BannersPage() {
             <Button
               variant="outline"
               size="sm"
+              className="rounded-lg"
               onClick={() => setPage(p => p + 1)}
               disabled={!data.next}
             >

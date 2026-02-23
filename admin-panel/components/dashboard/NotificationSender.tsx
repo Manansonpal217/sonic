@@ -135,7 +135,7 @@ export function NotificationSender() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-[#842B25] hover:bg-[#6b231f]">
+        <Button >
           <Bell className="mr-2 h-4 w-4" />
           Send Notification
         </Button>
@@ -261,7 +261,6 @@ export function NotificationSender() {
           </Button>
           <Button 
             onClick={handleSend} 
-            className="bg-[#842B25] hover:bg-[#6b231f]"
             disabled={sending}
           >
             {sending ? 'Sending...' : 'Send Notification'}

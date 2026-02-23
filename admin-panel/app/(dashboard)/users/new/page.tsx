@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useCreateUser } from '@/lib/hooks/useUsers';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -55,19 +56,19 @@ export default function NewUserPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/users">
+      <PageHeader
+        title="Create New User"
+        description="Add a new user to the system"
+      >
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/users" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
+            Back
           </Link>
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Create New User</h1>
-          <p className="text-muted-foreground">Add a new user to the system</p>
-        </div>
-      </div>
+      </PageHeader>
 
-      <Card>
+      <Card className="border-border/80 shadow-sm">
         <CardHeader>
           <CardTitle>User Information</CardTitle>
           <CardDescription>Enter the details for the new user</CardDescription>
@@ -149,12 +150,13 @@ export default function NewUserPage() {
               <Button
                 type="button"
                 variant="outline"
+                className="rounded-lg"
                 onClick={() => router.back()}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]" disabled={isSubmitting}>
+              <Button type="submit" className="rounded-lg" disabled={isSubmitting}>
                 {isSubmitting ? 'Creating...' : 'Create User'}
               </Button>
             </div>

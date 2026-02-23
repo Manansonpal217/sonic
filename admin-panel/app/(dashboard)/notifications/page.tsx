@@ -19,6 +19,7 @@ import { formatDate } from '@/lib/utils/formatters';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { NotificationSender } from '@/components/dashboard/NotificationSender';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function NotificationsPage() {
   const [page, setPage] = useState(1);
@@ -48,15 +49,11 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Notifications</h1>
-          <p className="text-muted-foreground">Manage and send notifications to users</p>
-        </div>
+      <PageHeader title="Notifications" description="Manage and send notifications to users">
         <NotificationSender />
-      </div>
+      </PageHeader>
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

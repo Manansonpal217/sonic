@@ -197,7 +197,6 @@ export default function NewBannerPage() {
               </Button>
               <Button
                 type="submit"
-                className="bg-[#842B25] hover:bg-[#6b231f]"
                 disabled={isSubmitting || !imageFile}
               >
                 {isSubmitting ? 'Creating...' : 'Create Banner'}

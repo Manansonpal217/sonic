@@ -1,6 +1,6 @@
-# Assets Directory — Ivara app
+# Assets Directory — INARA
 
-This directory contains the app assets for **Ivara app**.
+This directory contains the app assets for **INARA**.
 
 ## Required Assets
 
@@ -17,7 +17,7 @@ This directory contains the app assets for **Ivara app**.
 4. **favicon.png** (48×48px)
    - Web favicon (optional)
 
-## Ivara branding
+## INARA branding
 
 To use the **Inara** logo as the app icon:
 

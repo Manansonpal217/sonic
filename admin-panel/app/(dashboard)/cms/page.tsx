@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/utils/formatters';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function CMSPage() {
   const [page, setPage] = useState(1);
@@ -47,20 +48,16 @@ export default function CMSPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">CMS Pages</h1>
-          <p className="text-muted-foreground">Manage content pages</p>
-        </div>
-        <Button className="bg-[#842B25] hover:bg-[#6b231f]" asChild>
+      <PageHeader title="CMS Pages" description="Manage content pages">
+        <Button asChild>
           <Link href="/cms/new">
             <Plus className="mr-2 h-4 w-4" />
             Add Page
           </Link>
         </Button>
-      </div>
+      </PageHeader>
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

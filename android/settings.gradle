@@ -44,7 +44,7 @@ if (getRNMinorVersion() >= 75) {
   }
 }
 
-rootProject.name = 'Ivara app'
+rootProject.name = 'INARA'
 
 dependencyResolutionManagement {
   versionCatalogs {

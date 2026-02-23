@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { formatDate, formatDateTime } from '@/lib/utils/formatters';
 
 export default function SessionsPage() {
@@ -24,12 +25,9 @@ export default function SessionsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Sessions</h1>
-        <p className="text-muted-foreground">View user sessions and FCM tokens</p>
-      </div>
+      <PageHeader title="Sessions" description="View user sessions and FCM tokens" />
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Plus, Search, Edit, Trash2, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -109,15 +110,10 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Categories</h1>
-          <p className="text-muted-foreground">Manage jewelry categories</p>
-        </div>
-        
+      <PageHeader title="Categories" description="Manage jewelry categories">
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#842B25] hover:bg-[#6b231f]">
+            <Button>
               <Plus className="mr-2 h-4 w-4" />
               Add Category
             </Button>
@@ -157,28 +153,28 @@ export default function CategoriesPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]">
+                <Button type="submit" >
                   Create Category
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
-      </div>
+      </PageHeader>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search categories..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 rounded-lg bg-background"
           />
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -323,7 +319,7 @@ export default function CategoriesPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]">
+              <Button type="submit" >
                 Update Category
               </Button>
             </DialogFooter>

@@ -563,7 +563,7 @@ export default function NewProductPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-[#842B25] hover:bg-[#6b231f]" disabled={isSubmitting}>
+              <Button type="submit"  disabled={isSubmitting}>
                 {isSubmitting ? 'Creating...' : 'Create Product'}
               </Button>
             </div>

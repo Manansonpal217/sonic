@@ -36,6 +36,7 @@ import { getFullUrl, API_ENDPOINTS } from '@/lib/api/endpoints';
 import { toast } from 'sonner';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { usersApi } from '@/lib/api';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -195,14 +196,9 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Orders</h1>
-          <p className="text-muted-foreground">Manage customer orders</p>
-        </div>
-      </div>
+      <PageHeader title="Orders" description="Manage customer orders" />
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

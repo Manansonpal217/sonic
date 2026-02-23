@@ -39,14 +39,14 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-gray-200 bg-white">
+    <header className="sticky top-0 z-30 h-16 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="flex h-full items-center justify-between px-4 lg:px-6">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="lg:hidden"
+            className="lg:hidden text-muted-foreground hover:text-foreground"
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -55,13 +55,21 @@ export function Header() {
         <div className="flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback>{getUserInitials()}</AvatarFallback>
+              <Button
+                variant="ghost"
+                className="relative h-9 w-9 rounded-full hover:bg-accent transition-colors"
+              >
+                <Avatar className="h-9 w-9 border-2 border-border">
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                    {getUserInitials()}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent
+              align="end"
+              className="w-56 rounded-xl border-border shadow-lg"
+            >
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
@@ -75,12 +83,15 @@ export function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem className="rounded-lg cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="rounded-lg cursor-pointer text-destructive focus:text-destructive"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
@@ -91,5 +102,3 @@ export function Header() {
     </header>
   );
 }
-
-

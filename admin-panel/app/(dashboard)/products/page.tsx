@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, getMediaUrl } from '@/lib/utils/formatters';
+import { PageHeader } from '@/components/layout/PageHeader';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -33,32 +34,28 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Products</h1>
-          <p className="text-muted-foreground">Manage product catalog</p>
-        </div>
-        <Button className="bg-[#842B25] hover:bg-[#6b231f]" asChild>
+      <PageHeader title="Products" description="Manage product catalog">
+        <Button asChild>
           <Link href="/products/new">
             <Plus className="mr-2 h-4 w-4" />
             Add Product
           </Link>
         </Button>
-      </div>
+      </PageHeader>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search products..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 rounded-lg bg-background"
           />
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -154,7 +151,7 @@ export default function ProductsPage() {
       </div>
 
       {data && data.count > 20 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, data.count)} of {data.count} products
           </p>
@@ -162,6 +159,7 @@ export default function ProductsPage() {
             <Button
               variant="outline"
               size="sm"
+              className="rounded-lg"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={!data.previous}
             >
@@ -170,6 +168,7 @@ export default function ProductsPage() {
             <Button
               variant="outline"
               size="sm"
+              className="rounded-lg"
               onClick={() => setPage(p => p + 1)}
               disabled={!data.next}
             >
