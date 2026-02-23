@@ -17,18 +17,18 @@ export const ScanQRErrorFallback: React.FC<ScanQRErrorFallbackProps> = ({ onRetr
 		<Screen>
 			<CommonHeader label="Scan QR Code" onBackPress={goBack} />
 			<Box flex={1} padding="xl" justifyContent="center">
-				<Text variant="header" marginBottom="m">
+				<Text fontSize={20} fontFamily={fonts.bold} marginBottom="m">
 					Camera not available
 				</Text>
-				<Text variant="body" marginBottom="l" textAlign="center">
+				<Text fontSize={16} marginBottom="lg" textAlign="center">
 					QR scanning needs the camera module. Use a development build instead of Expo Go.
 				</Text>
-				<Text variant="body" marginBottom="xl" textAlign="center" color="gray">
+				<Text fontSize={16} marginBottom="xl" textAlign="center" color="gray">
 					From the project folder run:{'\n'}
 					npx expo run:ios{'\n'}
 					or npx expo run:android
 				</Text>
-				<Text variant="body" marginBottom="xl" textAlign="center" color="gray">
+				<Text fontSize={16} marginBottom="xl" textAlign="center" color="gray">
 					Then start Metro with: npx expo start -c
 				</Text>
 				<Pressable onPress={goBack}>

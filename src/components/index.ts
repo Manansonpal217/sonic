@@ -11,4 +11,6 @@ export { Search } from './Search';
 export { DashboardHeader } from './Dashborad/DashboardHeader';
 export { DashboardBanner } from './Dashborad/DashboardBanner';
 export type { DashboardBannerProps, BannerItem } from './Dashborad/DashboardBanner';
+export { DashboardCategoryGrid } from './Dashborad/DashboardCategoryGrid';
+export type { DashboardCategoryGridProps, CategoryItem } from './Dashborad/DashboardCategoryGrid';
 export { Toast } from './Toast';

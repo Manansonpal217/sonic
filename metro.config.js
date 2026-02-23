@@ -2,8 +2,6 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-// Prevent constant rebundling by ignoring certain file patterns
-config.watchFolders = [];
 config.transformer = {
 	...config.transformer,
 	babelTransformerPath: require.resolve('react-native-svg-transformer'),
@@ -14,11 +12,10 @@ config.resolver = {
 	sourceExts: [...config.resolver.sourceExts, 'svg', 'jsx', 'js', 'ts', 'tsx'],
 };
 
-// Configure server to use port 3000 and listen on all interfaces so the simulator can connect
+// Configure Metro port. Host binding is controlled via --host flag or adb reverse for USB connections.
 config.server = {
 	...config.server,
 	port: 3000,
-	host: '127.0.0.1',
 };
 
 // Disable Fast Refresh if it's causing issues (uncomment if needed)

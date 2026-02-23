@@ -9,7 +9,7 @@ import { fonts } from '../style';
 
 export const ApprovalPendingScreen: React.FC = observer(() => {
 	const insets = useSafeAreaInsets();
-	const topPadding = Math.max(insets.top, 44);
+	const topPadding = insets.top + 8;
 
 	const handleLogout = async () => {
 		await authStore.clearLoginData();

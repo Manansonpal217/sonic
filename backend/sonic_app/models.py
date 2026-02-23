@@ -373,8 +373,16 @@ class ProductLead(models.Model):
         on_delete=models.CASCADE,
         related_name='leads'
     )
+    product_variant = models.ForeignKey(
+        'ProductVariant',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='leads'
+    )
     company_name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=20)
+    quantity = models.PositiveIntegerField(default=1)
     submitted_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

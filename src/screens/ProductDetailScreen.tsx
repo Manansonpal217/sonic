@@ -51,7 +51,7 @@ interface ProductDetailScreenProps {
 
 export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(({ route }) => {
 	const insets = useSafeAreaInsets();
-	const topPadding = Math.max(insets.top, 44);
+	const topPadding = insets.top + 8;
 	const bottomPadding = Math.max(insets.bottom, 0);
 	const productId = route?.params?.productId;
 	
@@ -369,7 +369,7 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 							marginEnd="m"
 							style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
 						>
-							<Text fontSize={20} color="white">←</Text>
+							<Text fontSize={26} color="white" style={{ lineHeight: 30, textAlign: 'center', includeFontPadding: false }}>←</Text>
 						</Box>
 					</Pressable>
 					<Text

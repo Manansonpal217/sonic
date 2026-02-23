@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Dimensions } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import Animated, {
 	useAnimatedStyle,
@@ -7,9 +8,9 @@ import Animated, {
 	withTiming,
 } from 'react-native-reanimated';
 import { Box } from '../Box';
-import { DeviceHelper } from '../../helper/DeviceHelper';
 import { Image } from '../Image';
 import { Pressable } from '../Pressable';
+import { palette } from '../../style/Palette';
 
 export interface BannerItem {
 	imageUrl: string | number;
@@ -21,70 +22,59 @@ export interface DashboardBannerProps {
 	onBannerPress?: (item: BannerItem, index: number) => void;
 }
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const BANNER_HEIGHT = SCREEN_WIDTH / 2;
+const BANNER_PADDING = 16;
+
 const BannerItemComponent: React.FC<{ item: BannerItem; index: number; onPress?: (item: BannerItem, index: number) => void }> = ({ item, index, onPress }) => {
-	const itemScale = useSharedValue(0.95);
 	const itemOpacity = useSharedValue(0);
 	const pressScale = useSharedValue(1);
 
 	useEffect(() => {
-		itemScale.value = withSpring(1, {
-			damping: 12,
-			stiffness: 100,
-		});
-		itemOpacity.value = withTiming(1, { duration: 400 });
+		itemOpacity.value = withTiming(1, { duration: 350 });
 	}, []);
 
 	const itemStyle = useAnimatedStyle(() => ({
-		transform: [{ scale: itemScale.value * pressScale.value }],
+		transform: [{ scale: pressScale.value }],
 		opacity: itemOpacity.value,
 	}));
 
 	const handlePressIn = () => {
-		pressScale.value = withSpring(0.98, {
-			damping: 15,
-			stiffness: 300,
-		});
+		pressScale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
 	};
 
 	const handlePressOut = () => {
-		pressScale.value = withSpring(1, {
-			damping: 15,
-			stiffness: 300,
-		});
+		pressScale.value = withSpring(1, { damping: 15, stiffness: 300 });
 	};
 
-	const handleOnPress = () => {
-		if (onPress) {
-			onPress(item, index);
-		}
-	};
+	const source = typeof item.imageUrl === 'string'
+		? { uri: item.imageUrl }
+		: item.imageUrl;
 
 	return (
-		<Animated.View style={[itemStyle, { width: '100%', height: '100%' }]}>
+		<Animated.View style={[itemStyle, { width: SCREEN_WIDTH - BANNER_PADDING * 2, height: BANNER_HEIGHT }]}>
 			<Pressable
-				onPress={handleOnPress}
+				onPress={() => onPress?.(item, index)}
 				onPressIn={handlePressIn}
 				onPressOut={handlePressOut}
 				style={{
 					width: '100%',
 					height: '100%',
-					borderTopLeftRadius: 0,
-					borderTopRightRadius: 0,
-					borderBottomLeftRadius: 24,
-					borderBottomRightRadius: 24,
+					borderRadius: 20,
 					overflow: 'hidden',
-					elevation: 4,
+					backgroundColor: palette.gray5,
 					shadowColor: '#000',
-					shadowOffset: { width: 0, height: 4 },
-					shadowOpacity: 0.2,
-					shadowRadius: 8,
+					shadowOffset: { width: 0, height: 6 },
+					shadowOpacity: 0.15,
+					shadowRadius: 12,
+					elevation: 8,
 				}}
 			>
 				<Image
 					resizeMode="cover"
 					width="100%"
 					height="100%"
-					source={typeof item.imageUrl === 'string' ? { uri: item.imageUrl } : item.imageUrl}
+					source={source}
 				/>
 			</Pressable>
 		</Animated.View>
@@ -96,49 +86,56 @@ export const DashboardBanner: React.FC<DashboardBannerProps> = ({
 	onBannerPress,
 }) => {
 	const bannerOpacity = useSharedValue(0);
-	const bannerScale = useSharedValue(0.95);
+	const [activeIndex, setActiveIndex] = useState(0);
 
 	useEffect(() => {
-		bannerOpacity.value = withTiming(1, { duration: 500 });
-		bannerScale.value = withSpring(1, {
-			damping: 12,
-			stiffness: 100,
-		});
+		bannerOpacity.value = withTiming(1, { duration: 400 });
 	}, []);
 
 	const bannerStyle = useAnimatedStyle(() => ({
 		opacity: bannerOpacity.value,
-		transform: [{ scale: bannerScale.value }],
 	}));
 
 	if (!data || data.length === 0) {
 		return null;
 	}
 
+	const carouselWidth = SCREEN_WIDTH - BANNER_PADDING * 2;
+
 	return (
 		<Animated.View style={bannerStyle}>
-			<Box
-				marginTop="m"
-				width="100%"
-			>
+			<Box marginTop="m" marginBottom="m" width="100%" paddingHorizontal="m">
 				<Carousel
 					loop
-					width={DeviceHelper.width()}
-					height={DeviceHelper.width() / 1.8}
+					width={carouselWidth}
+					height={BANNER_HEIGHT}
 					autoPlay
 					data={data}
-					scrollAnimationDuration={1000}
-					autoPlayInterval={3000}
-					style={{ width: '100%' }}
-					onSnapToItem={(index) => {}}
+					scrollAnimationDuration={800}
+					autoPlayInterval={4000}
+					style={{ width: carouselWidth }}
+					onSnapToItem={(index) => setActiveIndex(index)}
 					renderItem={({ item, index }) => (
-						<BannerItemComponent 
-							item={item} 
-							index={index} 
-							onPress={onBannerPress}
-						/>
+						<BannerItemComponent item={item} index={index} onPress={onBannerPress} />
 					)}
 				/>
+				{data.length > 1 && (
+					<Box flexDirection="row" justifyContent="center" alignItems="center" paddingTop="s">
+						{data.map((_, i) => (
+							<Box
+								key={i}
+								width={activeIndex === i ? 10 : 6}
+								height={6}
+								borderRadius={3}
+								marginHorizontal="xs"
+								style={{
+									backgroundColor: activeIndex === i ? palette.primary : 'rgba(0,0,0,0.2)',
+									opacity: activeIndex === i ? 1 : 0.6,
+								}}
+							/>
+						))}
+					</Box>
+				)}
 			</Box>
 		</Animated.View>
 	);

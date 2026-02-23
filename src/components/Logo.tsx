@@ -1,6 +1,6 @@
 import React from 'react';
 import { ViewStyle } from 'react-native';
-import InaraLogoSvg from '../assets/logos/InaraLogo.svg';
+import InaraLogoWordmark from '../assets/logos/InaraLogoWordmark.svg';
 
 export interface LogoProps {
 	width?: number;
@@ -9,5 +9,5 @@ export interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ width = 120, height = 108, style }) => {
-	return <InaraLogoSvg width={width} height={height} style={style} />;
+	return <InaraLogoWordmark width={width} height={height} style={style} />;
 };

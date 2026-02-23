@@ -252,7 +252,7 @@ const OrderCard: React.FC<{ order: Order; onPress: () => void }> = ({ order, onP
 
 export const OrdersScreen: React.FC = observer(() => {
 	const insets = useSafeAreaInsets();
-	const topPadding = Math.max(insets.top, 44);
+	const topPadding = insets.top + 8;
 	const [orders, setOrders] = useState<Order[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isRefreshing, setIsRefreshing] = useState(false);
@@ -411,7 +411,7 @@ export const OrdersScreen: React.FC = observer(() => {
 								marginEnd="m"
 								style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
 							>
-								<Text fontSize={20} color="white">←</Text>
+								<Text fontSize={26} color="white" style={{ lineHeight: 30, textAlign: 'center', includeFontPadding: false }}>←</Text>
 							</Box>
 						</Pressable>
 						<Text

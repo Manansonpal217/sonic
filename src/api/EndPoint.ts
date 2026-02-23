@@ -50,4 +50,6 @@ export const UPDATE_PROFILE = (): string => `${BASE_URL}/update-profile`;
 export const DELETE_ACCOUNT = (): string => `${BASE_URL}/account-delete`;
 export const UPDATE_CART = (): string => `${BASE_URL}/update-cart`;
 export const PRODUCT_LEADS = (): string => `${BASE_URL}/product-leads/`;
+export const BANNERS_ACTIVE = (): string => `${BASE_URL}/banners/active/`;
+export const CATEGORIES_ACTIVE = (): string => `${BASE_URL}/categories/active/`;
 

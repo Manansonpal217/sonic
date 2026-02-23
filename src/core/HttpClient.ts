@@ -42,7 +42,13 @@ export const getHttpClient = (baseURL: string): AxiosInstance => {
 			console.log('[API] Response', response.status, response.config.url);
 			return response;
 		},
-		(error) => Promise.reject(error),
+		(error) => {
+			const fullUrl = typeof error.config?.url === 'string' && error.config.url.startsWith('http')
+				? error.config.url
+				: `${error.config?.baseURL || ''}${error.config?.url || ''}`;
+			console.warn('[API] Request failed:', fullUrl || 'unknown', 'code:', error.code, 'message:', error.message);
+			return Promise.reject(error);
+		},
 	);
 
 	return http;

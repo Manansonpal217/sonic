@@ -13,7 +13,7 @@ import { authFactory } from '../factory';
 
 export const ProfileScreen: React.FC = observer(() => {
 	const insets = useSafeAreaInsets();
-	const topPadding = Math.max(insets.top, 44);
+	const topPadding = insets.top + 8;
 	const [isLogoutVisible, setIsLogoutVisible] = useState(false);
 
 	const logoutApiCall = async () => {
@@ -57,7 +57,7 @@ export const ProfileScreen: React.FC = observer(() => {
 								marginEnd="m"
 								style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
 							>
-								<Text fontSize={20} color="white">←</Text>
+								<Text fontSize={26} color="white" style={{ lineHeight: 30, textAlign: 'center', includeFontPadding: false }}>←</Text>
 							</Box>
 						</Pressable>
 						<Text

@@ -13,31 +13,30 @@ export const ScanQRScreen: React.FC = () => {
 		({ data }: { data: string }) => {
 			if (scanned) return;
 			setScanned(true);
+			let productId: number | null = null;
+
+			// Try JSON format: {"productId": 123}, {"id": 123}, {"product_id": 123}
 			try {
-				const parsed = JSON.parse(data) as { productId?: number };
-				const productId = parsed?.productId;
-				if (typeof productId === 'number' && productId > 0) {
-					navigate({
-						screenName: Route.LeadForm,
-						params: { productId },
-					});
-				} else {
-					Alert.alert('Invalid QR', 'This QR code is not a valid product code.');
-					setScanned(false);
-				}
+				const parsed = JSON.parse(data) as { productId?: number; id?: number; product_id?: number };
+				productId = parsed?.productId ?? parsed?.id ?? parsed?.product_id ?? null;
 			} catch {
-				// Maybe URL format like sonic://product/123
-				const match = data.match(/product[/:](\d+)/i);
-				if (match) {
-					const productId = parseInt(match[1], 10);
-					navigate({
-						screenName: Route.LeadForm,
-						params: { productId },
-					});
-				} else {
-					Alert.alert('Invalid QR', 'This QR code is not a valid product code.');
-					setScanned(false);
+				// Not JSON - try URL or plain number
+				const urlMatch = data.match(/product[/:](\d+)/i) || data.match(/\/product\/(\d+)/i);
+				if (urlMatch) {
+					productId = parseInt(urlMatch[1], 10);
+				} else if (/^\d+$/.test(data.trim())) {
+					productId = parseInt(data.trim(), 10);
 				}
+			}
+
+			if (typeof productId === 'number' && productId > 0) {
+				navigate({
+					screenName: Route.LeadForm,
+					params: { productId },
+				});
+			} else {
+				Alert.alert('Invalid QR', 'This QR code is not a valid product code.');
+				setScanned(false);
 			}
 		},
 		[scanned]
@@ -48,7 +47,7 @@ export const ScanQRScreen: React.FC = () => {
 			<Screen>
 				<CommonHeader label="Scan QR Code" onBackPress={goBack} />
 				<Box flex={1} justifyContent="center" alignItems="center" padding="xl">
-					<Text variant="body">Requesting camera access...</Text>
+					<Text fontSize={16}>Requesting camera access...</Text>
 					<ActivityIndicator size="large" style={{ marginTop: 16 }} />
 				</Box>
 			</Screen>
@@ -60,7 +59,7 @@ export const ScanQRScreen: React.FC = () => {
 			<Screen>
 				<CommonHeader label="Scan QR Code" onBackPress={goBack} />
 				<Box flex={1} justifyContent="center" alignItems="center" padding="xl">
-					<Text variant="body" textAlign="center" marginBottom="l">
+					<Text fontSize={16} textAlign="center" marginBottom="lg">
 						Camera permission is required to scan product QR codes.
 					</Text>
 					<Pressable onPress={requestPermission}>
@@ -79,7 +78,7 @@ export const ScanQRScreen: React.FC = () => {
 		<Screen>
 			<CommonHeader label="Scan QR Code" onBackPress={goBack} />
 			<Box flex={1} padding="m">
-				<Text variant="body" marginBottom="m">
+				<Text fontSize={16} marginBottom="m">
 					Point your camera at a product QR code.
 				</Text>
 				<Box flex={1} overflow="hidden" borderRadius={12} style={styles.cameraWrap}>

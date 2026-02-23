@@ -1,40 +1,75 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Box, Text, Screen, StatusBarType, DrawerMenu, DashboardHeader, DashboardBanner, BannerItem } from '../components';
-import { DeviceHelper } from '../helper/DeviceHelper';
+import { Box, Screen, StatusBarType, DrawerMenu, DashboardHeader, DashboardBanner, DashboardCategoryGrid, BannerItem, CategoryItem } from '../components';
 import { navigate, Route } from '../navigation/AppNavigation';
-import { fonts } from '../style';
-import { Images } from '../assets';
+import { getHttp } from '../core';
+import { BANNERS_ACTIVE, CATEGORIES_ACTIVE } from '../api/EndPoint';
 
 export const DashboardScreen: React.FC = () => {
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [searchText, setSearchText] = useState('');
+	const [bannerData, setBannerData] = useState<BannerItem[]>([]);
+	const [categories, setCategories] = useState<CategoryItem[]>([]);
 	const refreshNotificationCountRef = useRef<(() => void) | null>(null);
 	const refreshCartCountRef = useRef<(() => void) | null>(null);
 
-	// Banner data using images from sonic app
-	const bannerData: BannerItem[] = [
-		{
-			imageUrl: Images.loginImage,
-			bannerProductId: '1',
-		},
-		{
-			imageUrl: Images.loginImg,
-			bannerProductId: '2',
-		},
-		{
-			imageUrl: Images.logo,
-			bannerProductId: '3',
-		},
-	];
+	// Fetch active banners from API
+	useEffect(() => {
+		const fetchBanners = async () => {
+			try {
+				const http = getHttp();
+				const result = await http.get<Array<{ id: number; banner_image?: string; banner_product_id?: number; banner_title?: string }>>(BANNERS_ACTIVE());
+				if (result?.isSuccess && result?.data) {
+					const items: BannerItem[] = (result.data as any[]).map((b) => ({
+						imageUrl: b.banner_image || '',
+						bannerProductId: b.banner_product_id ? String(b.banner_product_id) : undefined,
+					})).filter((b) => b.imageUrl);
+					setBannerData(items);
+				}
+			} catch (e) {
+				if (__DEV__) {
+					console.warn('Banner fetch failed:', (e as Error)?.message);
+				}
+			}
+		};
+		fetchBanners();
+	}, []);
+
+	// Fetch active categories for grid
+	useEffect(() => {
+		const fetchCategories = async () => {
+			try {
+				const http = getHttp();
+				const result = await http.get<CategoryItem[]>(CATEGORIES_ACTIVE());
+				if (result?.isSuccess && result?.data) {
+					setCategories((result.data as any[]) || []);
+				}
+			} catch (e) {
+				if (__DEV__) {
+					console.warn('Categories fetch failed:', (e as Error)?.message);
+				}
+			}
+		};
+		fetchCategories();
+	}, []);
+
+	const handleCategoryPress = (category: CategoryItem) => {
+		navigate({
+			screenName: Route.ProductList,
+			params: {
+				categoryId: category.id,
+				categoryName: category.category_name,
+			},
+		});
+	};
 
 	const handleBannerPress = (item: BannerItem, index: number) => {
-		// Handle banner press - navigate to product detail or perform action
-		console.log('Banner pressed:', item, index);
 		if (item.bannerProductId) {
-			// Navigate to product detail if needed
-			// navigate({ screenName: Route.ProductDetail, params: { productId: item.bannerProductId } });
+			navigate({
+				screenName: Route.ProductDetail,
+				params: { productId: item.bannerProductId },
+			});
 		}
 	};
 
@@ -109,34 +144,10 @@ export const DashboardScreen: React.FC = () => {
 							data={bannerData}
 							onBannerPress={handleBannerPress}
 						/>
-						
-						<Box flex={1} paddingHorizontal="r" paddingTop="m">
-							
-							{/* Dashboard content goes here */}
-							<Box
-								backgroundColor="gray5"
-								borderRadius={12}
-								padding="m"
-								marginTop="m"
-								marginBottom="m"
-							>
-								<Text
-									fontSize={24}
-									fontFamily={fonts.bold}
-									color="black"
-									marginBottom="s"
-								>
-									Welcome to Dashbaord
-								</Text>
-								<Text
-									fontSize={16}
-									fontFamily={fonts.regular}
-									color="gray"
-								>
-									This is your main screen. You can add your dashboard content here.
-								</Text>
-							</Box>
-						</Box>
+						<DashboardCategoryGrid
+							categories={categories}
+							onCategoryPress={handleCategoryPress}
+						/>
 					</ScrollView>
 				</Box>
 			</DrawerMenu>

@@ -1,24 +1,23 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'http',
+        protocol: 'http' as const,
         hostname: 'localhost',
         port: '8000',
         pathname: '/media/**',
       },
       {
-        protocol: 'http',
+        protocol: 'http' as const,
         hostname: '127.0.0.1',
         port: '8000',
         pathname: '/media/**',
       },
     ],
-    // Disable image optimization in development to avoid private IP issues
     unoptimized: process.env.NODE_ENV === 'development',
   },
 };
 
-export default nextConfig;
+export default nextConfig as import('next').NextConfig;

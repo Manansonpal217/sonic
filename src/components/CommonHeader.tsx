@@ -15,7 +15,7 @@ export const CommonHeader: React.FC<CommonHeaderProps> = ({
 	onBackPress,
 }) => {
 	const insets = useSafeAreaInsets();
-	const topPadding = Math.max(insets.top + 8, 24);
+	const topPadding = insets.top + 8;
 	
 	return (
 		<Box
@@ -32,7 +32,7 @@ export const CommonHeader: React.FC<CommonHeaderProps> = ({
 					style={styles.backButton}
 					hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
 				>
-					<Text fontSize={24}>←</Text>
+					<Text fontSize={26} color="black" style={{ lineHeight: 30, textAlign: 'center', includeFontPadding: false }}>←</Text>
 				</TouchableOpacity>
 			)}
 			<Text

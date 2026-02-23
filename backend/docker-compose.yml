@@ -8,7 +8,8 @@ services:
       POSTGRES_USER: ${DB_USER:-sonic_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-sonic_password}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Use 5433 by default so we don't conflict with other Postgres on 5432
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -44,8 +45,8 @@ services:
     image: sosedoff/pgweb:latest
     container_name: sonic_pgweb
     ports:
-      # Use 5050 so 8081 stays free for React Native Metro (avoids POST /symbolicate 404 when app talks to wrong port)
-      - "5050:8081"
+      # Use 5051 (5050 often in use by other tools)
+      - "5051:8081"
     environment:
       # pgweb uses DATABASE_URL (not PGWEB_DATABASE_URL). Database must be sonic_db (same as POSTGRES_DB).
       - DATABASE_URL=postgres://sonic_user:sonic_password@db:5432/sonic_db?sslmode=disable

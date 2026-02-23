@@ -13,11 +13,11 @@ import {
   Bell,
   Mail,
   Settings,
-  Menu,
   X,
   Layers,
   ClipboardList,
   MessageSquare,
+  UserCheck,
 } from 'lucide-react';
 import { useUIStore } from '@/lib/store/uiStore';
 import { Button } from '@/components/ui/button';
@@ -47,6 +47,11 @@ const menuItems = [
     title: 'Orders',
     href: '/orders',
     icon: ShoppingCart,
+  },
+  {
+    title: 'Product Leads',
+    href: '/product-leads',
+    icon: UserCheck,
   },
   {
     title: 'Customize Orders',
@@ -107,27 +112,24 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 z-50 h-screen bg-white border-r border-gray-200 transition-transform duration-300 lg:translate-x-0',
+          'fixed top-0 left-0 z-50 h-screen overflow-hidden bg-white border-r border-gray-200 transition-transform duration-300 lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-          'w-64'
+          'w-64 flex flex-col'
         )}
       >
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-[#842B25]">Sonic Admin</h1>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+        {/* Mobile close button */}
+        <div className="flex shrink-0 justify-end p-2 lg:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+        {/* Navigation */}
+        <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
@@ -153,7 +155,6 @@ export function Sidebar() {
               );
             })}
           </nav>
-        </div>
       </aside>
     </>
   );

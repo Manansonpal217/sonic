@@ -394,7 +394,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 
 class ProductLeadViewSet(viewsets.ModelViewSet):
-    """Product leads from QR scan. Only staff users can create; list returns leads submitted by current user."""
+    """Product leads from QR scan. Only staff can create (from app); any authenticated user can list (e.g. admin panel)."""
     serializer_class = ProductLeadSerializer
     permission_classes = [IsAuthenticated]
     http_method_names = ['get', 'post']
@@ -402,9 +402,7 @@ class ProductLeadViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return ProductLead.objects.none()
-        if self.request.user.is_staff:
-            return ProductLead.objects.all().select_related('product', 'submitted_by').order_by('-created_at')
-        return ProductLead.objects.filter(submitted_by=self.request.user).select_related('product', 'submitted_by').order_by('-created_at')
+        return ProductLead.objects.all().select_related('product', 'product_variant', 'submitted_by').order_by('-created_at')
 
     def create(self, request, *args, **kwargs):
         if not request.user.is_staff:

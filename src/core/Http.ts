@@ -23,6 +23,11 @@ export class Http {
 			console.log('HTTP GET Response:', response.status, response.data);
 			return success(response.data, response.data?.message as string);
 		} catch (error: any) {
+			if (__DEV__) {
+				// Log full error for debugging network/API issues (e.g. ECONNREFUSED, timeout)
+				const url = error.config?.url || error.config?.baseURL || 'unknown';
+				console.warn('[API] GET failed:', url, 'code:', error.code, 'message:', error.message);
+			}
 			const rawMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Request failed';
 			const safeMessage = sanitizeUserMessage(typeof rawMessage === 'string' ? rawMessage : 'Request failed');
 			const userMessage = !__DEV__ ? GENERIC_ERROR : safeMessage;
@@ -37,6 +42,10 @@ export class Http {
 			console.log('HTTP Response:', response.status, response.data);
 			return success(response.data, (response.data as any)?.message as string);
 		} catch (error: any) {
+			if (__DEV__) {
+				const url = error.config?.url || error.config?.baseURL || 'unknown';
+				console.warn('[API] POST failed:', url, 'code:', error.code, 'message:', error.message);
+			}
 			// Handle Django REST Framework validation errors
 			let errorMessage = error.response?.data?.message ||
 				error.response?.data?.error ||

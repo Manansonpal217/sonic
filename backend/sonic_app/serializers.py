@@ -284,16 +284,19 @@ class ClientRegistrationSerializer(serializers.ModelSerializer):
 class ProductLeadSerializer(serializers.ModelSerializer):
     """Product lead serializer for sales-person-submitted leads from QR scan."""
     product_name = serializers.CharField(source='product.product_name', read_only=True)
+    submitted_by_username = serializers.CharField(source='submitted_by.username', read_only=True)
 
     class Meta:
         model = ProductLead
         fields = [
-            'id', 'product', 'product_name', 'company_name', 'phone_number',
-            'user_name', 'email', 'gst', 'address',
-            'submitted_by', 'created_at', 'updated_at'
+            'id', 'product', 'product_variant', 'product_name', 'company_name', 'phone_number',
+            'quantity', 'user_name', 'email', 'gst', 'address',
+            'submitted_by', 'submitted_by_username', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'submitted_by', 'created_at', 'updated_at']
         extra_kwargs = {
+            'product_variant': {'required': False, 'allow_null': True},
+            'quantity': {'required': False, 'default': 1},
             'user_name': {'required': False, 'allow_blank': True},
             'email': {'required': False, 'allow_blank': True},
             'gst': {'required': False, 'allow_blank': True},

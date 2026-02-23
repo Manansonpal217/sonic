@@ -46,9 +46,7 @@ import { Box } from '../Box';
 import { Text } from '../Text';
 import { fonts, palette } from '../../style';
 import { Pressable } from '../Pressable';
-import { Images } from '../../assets';
-import { Image } from '../Image';
-import { Logo } from '../Logo';
+import { ScrollView } from 'react-native';
 import { navigate, reset, Route } from '../../navigation/AppNavigation';
 import { Storage } from '../../core/Storage';
 import { DrawerHeader } from './DrawerHeader';
@@ -113,7 +111,7 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [categoriesLoading, setCategoriesLoading] = useState(true);
 	const insets = useSafeAreaInsets();
-	const topPadding = Math.max(insets.top, 44); // Ensure at least 44px for Dynamic Island
+	const topPadding = insets.top + 8;
 	const bottomPadding = Math.max(insets.bottom, 20); // Safe area padding for bottom
 
 	// Get current route for active state indicator
@@ -200,64 +198,23 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 		fetchCategories();
 	}, []);
 
-	// Minimal menu items with route mapping (sales staff see Scan QR Code)
+	// Menu items (sales staff see Scan QR Code)
 	const user = authStore.loginData?.user;
 	const primaryMenuItems = [
-		{
-			label: 'Dashboard',
-			route: Route.Dashboard,
-			onPress: () => {
-				onClosePress();
-				navigate({ screenName: Route.Dashboard });
-			},
-			svgName: Images.order,
-			isPrimary: true,
+		{ label: 'Dashboard', route: Route.Dashboard, isPrimary: true },
+		{ label: 'My Orders', route: Route.Orders, isPrimary: true },
+		...(user?.is_staff ? [{ label: 'Scan QR Code', route: Route.ScanQR, isPrimary: true }] : []),
+		{ label: 'About Us', route: 'AboutUs', isPrimary: false },
+		{ label: 'Contact Us', route: 'ContactUs', isPrimary: false },
+	].map((item) => ({
+		...item,
+		onPress: () => {
+			onClosePress();
+			if (item.route === Route.Dashboard) navigate({ screenName: Route.Dashboard });
+			else if (item.route === Route.Orders) navigate({ screenName: Route.Orders });
+			else if (item.route === Route.ScanQR) navigate({ screenName: Route.ScanQR });
 		},
-		{
-			label: 'My Orders',
-			route: Route.Orders,
-			onPress: () => {
-				onClosePress();
-				navigate({ screenName: Route.Orders });
-			},
-			svgName: Images.order,
-			isPrimary: true,
-		},
-		...(user?.is_staff
-			? [
-					{
-						label: 'Scan QR Code',
-						route: Route.ScanQR,
-						onPress: () => {
-							onClosePress();
-							navigate({ screenName: Route.ScanQR });
-						},
-						svgName: Images.order,
-						isPrimary: true,
-					},
-				]
-			: []),
-		{
-			label: 'About Us',
-			route: 'AboutUs', // Placeholder
-			onPress: () => {
-				onClosePress();
-				// navigate({ screenName: Route.AboutUs });
-			},
-			svgName: Images.order,
-			isPrimary: false,
-		},
-		{
-			label: 'Contact Us',
-			route: 'ContactUs', // Placeholder
-			onPress: () => {
-				onClosePress();
-				// navigate({ screenName: Route.ContactUs });
-			},
-			svgName: Images.order,
-			isPrimary: false,
-		},
-	];
+	}));
 
 	const logoutApiCall = async () => {
 		// const response = await authFactory.logoutApi();
@@ -286,105 +243,113 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 			flex={1} 
 			height="100%" 
 			backgroundColor="white"
-			style={{ 
-				paddingTop: topPadding,
-			}}
+			flexDirection="column"
 		>
-			{/* Gradient Background Overlay - Subtle accent color */}
+			{/* Premium gradient background - warm accent */}
 			<Box
 				position="absolute"
 				top={0}
 				left={0}
 				right={0}
-				height="35%"
+				height="50%"
 				style={{
-					backgroundColor: '#FFF8F5',
-					opacity: 0.5,
+					backgroundColor: '#FDF8F6',
+					opacity: 1,
+				}}
+			/>
+			<Box
+				position="absolute"
+				top={0}
+				left={0}
+				right={0}
+				height="25%"
+				style={{
+					backgroundColor: '#FFF5F2',
+					opacity: 0.9,
 				}}
 			/>
 			
 			<DrawerHeader onClose={onClosePress} />
 			
-			{/* Brand Logo Section */}
-			<Box 
-				alignItems="center" 
-				justifyContent="center" 
-				paddingVertical="lg"
-				marginTop="m"
+			<ScrollView
+				style={{ flex: 1, zIndex: 1 }}
+				contentContainerStyle={{ paddingBottom: 28, paddingHorizontal: 20 }}
+				showsVerticalScrollIndicator={false}
 			>
-				<Logo 
-					width={120} 
-					height={108} 
-				/>
-			</Box>
-			
 			{/* Primary Menu Section */}
-			<Box marginTop="m" paddingBottom="xl" style={{ zIndex: 1 }}>
+			<Box marginTop="lg" marginBottom="xl">
+				<Box marginBottom="m" paddingLeft="s">
+					<Text
+						fontSize={11}
+						fontFamily={fonts.semiBold}
+						style={{ color: palette.gray }}
+						textTransform="uppercase"
+						letterSpacing={1.5}
+					>
+						Navigation
+					</Text>
+				</Box>
 				{primaryMenuItems.map((value, index) => {
 					const MenuItem = ({ item, itemIndex }: { item: typeof value; itemIndex: number }) => {
-						const translateX = useSharedValue(-50);
+						const translateX = useSharedValue(-30);
 						const opacity = useSharedValue(0);
-						const scale = useSharedValue(0.9);
 						const pressScale = useSharedValue(1);
 						const isActive = currentRoute === item.route;
 
 						useEffect(() => {
-							translateX.value = withDelay(itemIndex * 60, withSpring(0, {
-								damping: 15,
-								stiffness: 120,
+							translateX.value = withDelay(itemIndex * 50, withSpring(0, {
+								damping: 18,
+								stiffness: 100,
 							}));
-							opacity.value = withDelay(itemIndex * 60, withTiming(1, { duration: 400 }));
-							scale.value = withDelay(itemIndex * 60, withSpring(1, {
-								damping: 15,
-								stiffness: 120,
-							}));
+							opacity.value = withDelay(itemIndex * 50, withTiming(1, { duration: 300 }));
 						}, []);
 
 						const animatedStyle = useAnimatedStyle(() => ({
 							transform: [
 								{ translateX: translateX.value },
-								{ scale: scale.value * pressScale.value },
+								{ scale: pressScale.value },
 							],
 							opacity: opacity.value,
 						}));
 
 						const handlePressIn = () => {
-							pressScale.value = withSpring(0.96, {
+							pressScale.value = withSpring(0.98, {
 								damping: 15,
-								stiffness: 300,
+								stiffness: 400,
 							});
 						};
 
 						const handlePressOut = () => {
 							pressScale.value = withSpring(1, {
 								damping: 15,
-								stiffness: 300,
+								stiffness: 400,
 							});
 						};
 
 						return (
-							<Animated.View style={[animatedStyle, { width: '100%' }]}>
-								<Box 
-									marginBottom="m"
-									paddingLeft="xl"
-									paddingRight="m"
-									height={52}
-									justifyContent="center"
-									borderRadius={12}
-									width="100%"
+							<Animated.View style={[animatedStyle, { width: '100%', marginBottom: 8 }]}>
+								<Pressable
+									onPress={item.onPress}
+									onPressIn={handlePressIn}
+									onPressOut={handlePressOut}
 									style={{
-										backgroundColor: isActive ? '#FFF8F5' : 'white',
-										elevation: isActive ? 5 : 3,
-										shadowColor: isActive ? palette.primary : '#000',
-										shadowOffset: { width: 0, height: isActive ? 3 : 2 },
-										shadowOpacity: isActive ? 0.18 : 0.12,
-										shadowRadius: isActive ? 6 : 4,
+										flexDirection: 'row',
+										alignItems: 'center',
+										paddingVertical: 14,
+										paddingHorizontal: 18,
+										borderRadius: 14,
+										backgroundColor: isActive ? '#FFF5F7' : 'rgba(255,255,255,0.9)',
 										borderWidth: 1,
-										borderColor: isActive ? '#F5D5C8' : '#F0F0F0',
+										borderColor: isActive ? 'rgba(223, 29, 63, 0.25)' : 'rgba(0,0,0,0.06)',
 										overflow: 'hidden',
+										shadowColor: isActive ? palette.primary : '#000',
+										shadowOffset: { width: 0, height: 1 },
+										shadowOpacity: isActive ? 0.08 : 0.04,
+										shadowRadius: 6,
+										elevation: isActive ? 3 : 2,
 									}}
 								>
-									{/* Active indicator bar on the left */}
+									{/* Left accent bar - active only */}
 									{isActive && (
 										<Box
 											position="absolute"
@@ -394,59 +359,40 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 											width={4}
 											style={{
 												backgroundColor: palette.primary,
-												borderTopRightRadius: 4,
-												borderBottomRightRadius: 4,
+												borderTopRightRadius: 2,
+												borderBottomRightRadius: 2,
 											}}
 										/>
 									)}
-									{/* Active background accent */}
-									{isActive && (
-										<Box
-											position="absolute"
-											left={0}
-											top={0}
-											bottom={0}
-											right={0}
-											style={{
-												backgroundColor: 'rgba(223, 29, 63, 0.03)',
-											}}
-										/>
-									)}
-									<Pressable
-										onPress={item.onPress}
-										onPressIn={handlePressIn}
-										onPressOut={handlePressOut}
+									{/* Icon accent */}
+									<Box
+										width={36}
+										height={36}
+										borderRadius={10}
+										alignItems="center"
+										justifyContent="center"
+										marginRight="m"
 										style={{
-											flexDirection: 'row',
-											alignItems: 'center',
-											width: '100%',
-											height: '100%',
-											position: 'relative',
-											zIndex: 1,
+											backgroundColor: isActive ? palette.primary : 'rgba(0,0,0,0.06)',
 										}}
 									>
-										{/* Active indicator dot */}
-										{isActive && (
-											<Box
-												width={6}
-												height={6}
-												borderRadius={3}
-												style={{
-													backgroundColor: palette.primary,
-													marginRight: 8,
-												}}
-											/>
-										)}
-										<Text 
-											fontFamily={isActive ? fonts.bold : (item.isPrimary ? fonts.semiBold : fonts.medium)} 
-											fontSize={item.isPrimary ? 16 : 15} 
-											style={{ color: isActive ? palette.primary : 'black' }} 
-											letterSpacing={isActive ? 0.1 : -0.2}
+										<Text
+											fontSize={16}
+											fontFamily={fonts.bold}
+											style={{ color: isActive ? 'white' : palette.dark }}
 										>
-											{item.label}
+											{item.label.charAt(0)}
 										</Text>
-									</Pressable>
-								</Box>
+									</Box>
+									<Text
+										fontFamily={isActive ? fonts.bold : (item.isPrimary ? fonts.semiBold : fonts.medium)}
+										fontSize={15}
+										style={{ color: isActive ? palette.primary : palette.dark }}
+										letterSpacing={-0.2}
+									>
+										{item.label}
+									</Text>
+								</Pressable>
 							</Animated.View>
 						);
 					};
@@ -456,65 +402,53 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 			</Box>
 
 			{/* Categories Section */}
-			<Box marginTop="m" paddingBottom="xl" style={{ zIndex: 1 }}>
-				<Box paddingLeft="xl" paddingRight="m" marginBottom="m">
+			<Box marginTop="xl" paddingBottom="xl">
+				<Box marginBottom="m" paddingLeft="s">
 					<Text
-						fontSize={14}
+						fontSize={11}
 						fontFamily={fonts.semiBold}
-						color="gray"
+						style={{ color: palette.gray }}
 						textTransform="uppercase"
-						letterSpacing={1}
+						letterSpacing={1.5}
 					>
-						Categories
+						Shop by Category
 					</Text>
 				</Box>
 				{categoriesLoading ? (
-					<Box paddingLeft="xl" paddingRight="m" paddingVertical="m">
-						<Text fontSize={14} fontFamily={fonts.regular} color="gray">
-							Loading categories...
+					<Box paddingVertical="m" paddingHorizontal="s">
+						<Text fontSize={14} fontFamily={fonts.regular} style={{ color: palette.gray }}>
+							Loading...
 						</Text>
 					</Box>
 				) : categories.length > 0 ? (
 					categories.map((category, index) => {
 						const CategoryItem = ({ cat, catIndex }: { cat: Category; catIndex: number }) => {
-							const translateX = useSharedValue(-50);
+							const translateX = useSharedValue(-30);
 							const opacity = useSharedValue(0);
-							const scale = useSharedValue(0.9);
 							const pressScale = useSharedValue(1);
-							const isActive = currentRoute === Route.ProductList;
 
 							useEffect(() => {
-								translateX.value = withDelay((primaryMenuItems.length + catIndex) * 60, withSpring(0, {
-									damping: 15,
-									stiffness: 120,
+								translateX.value = withDelay((primaryMenuItems.length + catIndex) * 50, withSpring(0, {
+									damping: 18,
+									stiffness: 100,
 								}));
-								opacity.value = withDelay((primaryMenuItems.length + catIndex) * 60, withTiming(1, { duration: 400 }));
-								scale.value = withDelay((primaryMenuItems.length + catIndex) * 60, withSpring(1, {
-									damping: 15,
-									stiffness: 120,
-								}));
+								opacity.value = withDelay((primaryMenuItems.length + catIndex) * 50, withTiming(1, { duration: 300 }));
 							}, []);
 
 							const animatedStyle = useAnimatedStyle(() => ({
 								transform: [
 									{ translateX: translateX.value },
-									{ scale: scale.value * pressScale.value },
+									{ scale: pressScale.value },
 								],
 								opacity: opacity.value,
 							}));
 
 							const handlePressIn = () => {
-								pressScale.value = withSpring(0.96, {
-									damping: 15,
-									stiffness: 300,
-								});
+								pressScale.value = withSpring(0.98, { damping: 15, stiffness: 400 });
 							};
 
 							const handlePressOut = () => {
-								pressScale.value = withSpring(1, {
-									damping: 15,
-									stiffness: 300,
-								});
+								pressScale.value = withSpring(1, { damping: 15, stiffness: 400 });
 							};
 
 							const handleCategoryPress = () => {
@@ -529,59 +463,48 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 							};
 
 							return (
-								<Animated.View style={[animatedStyle, { width: '100%' }]}>
-									<Box 
-										marginBottom="m"
-										paddingLeft="xl"
-										paddingRight="m"
-										height={52}
-										justifyContent="center"
-										borderRadius={12}
-										width="100%"
+								<Animated.View style={[animatedStyle, { width: '100%', marginBottom: 8 }]}>
+									<Pressable
+										onPress={handleCategoryPress}
+										onPressIn={handlePressIn}
+										onPressOut={handlePressOut}
 										style={{
-											backgroundColor: 'white',
-											elevation: 3,
-											shadowColor: '#000',
-											shadowOffset: { width: 0, height: 2 },
-											shadowOpacity: 0.12,
-											shadowRadius: 4,
+											flexDirection: 'row',
+											alignItems: 'center',
+											justifyContent: 'space-between',
+											paddingVertical: 12,
+											paddingHorizontal: 18,
+											borderRadius: 12,
+											backgroundColor: 'rgba(255,255,255,0.9)',
 											borderWidth: 1,
-											borderColor: '#F0F0F0',
-											overflow: 'hidden',
+											borderColor: 'rgba(0,0,0,0.06)',
+											shadowColor: '#000',
+											shadowOffset: { width: 0, height: 1 },
+											shadowOpacity: 0.04,
+											shadowRadius: 6,
+											elevation: 2,
 										}}
 									>
-										<Pressable
-											onPress={handleCategoryPress}
-											onPressIn={handlePressIn}
-											onPressOut={handlePressOut}
-											style={{
-												flexDirection: 'row',
-												alignItems: 'center',
-												width: '100%',
-												height: '100%',
-												position: 'relative',
-												zIndex: 1,
-											}}
+										<Text
+											fontFamily={fonts.medium}
+											fontSize={15}
+											style={{ color: palette.dark }}
 										>
-											<Text 
-												fontFamily={fonts.medium} 
-												fontSize={15} 
-												color="black"
+											{cat.category_name}
+										</Text>
+										{cat.products_count !== undefined && (
+											<Box
+												paddingHorizontal="s"
+												paddingVertical="xs"
+												borderRadius={8}
+												style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
 											>
-												{cat.category_name}
-											</Text>
-											{cat.products_count !== undefined && (
-												<Text 
-													fontFamily={fonts.regular} 
-													fontSize={12} 
-													color="gray"
-													marginLeft="s"
-												>
-													({cat.products_count})
+												<Text fontFamily={fonts.semiBold} fontSize={12} style={{ color: palette.gray }}>
+													{cat.products_count}
 												</Text>
-											)}
-										</Pressable>
-									</Box>
+											</Box>
+										)}
+									</Pressable>
 								</Animated.View>
 							);
 						};
@@ -589,15 +512,16 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 						return <CategoryItem key={`category-${category.id}`} cat={category} catIndex={index} />;
 					})
 				) : (
-					<Box paddingLeft="xl" paddingRight="m" paddingVertical="m">
-						<Text fontSize={14} fontFamily={fonts.regular} color="gray">
+					<Box paddingVertical="m" paddingHorizontal="s">
+						<Text fontSize={14} fontFamily={fonts.regular} style={{ color: palette.gray }}>
 							No categories available
 						</Text>
 					</Box>
 				)}
 			</Box>
+			</ScrollView>
 
-			{/* Logout Button at Bottom */}
+			{/* Logout Button at Bottom - fixed below scroll area */}
 			{authStore.isLogin() && (() => {
 				const LogoutButton = () => {
 					const translateY = useSharedValue(30);
@@ -636,16 +560,17 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 
 					return (
 						<Box
-							position="absolute"
-							bottom={0}
-							left={0}
-							right={0}
+							flexShrink={0}
 							style={{
 								borderTopWidth: 1,
-								borderTopColor: '#F0F0F0',
+								borderTopColor: 'rgba(0,0,0,0.06)',
+								backgroundColor: 'rgba(255,255,255,0.95)',
+								paddingHorizontal: 20,
+								paddingTop: 12,
+								paddingBottom: 12 + bottomPadding,
 							}}
 						>
-							<Animated.View style={animatedStyle}>
+							<Animated.View style={[animatedStyle, { borderRadius: 14, overflow: 'hidden' }]}>
 								<Pressable
 									onPress={() => {
 										setIsLogoutVisible(true);
@@ -659,27 +584,24 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 										flexDirection="row"
 										justifyContent="center"
 										alignItems="center"
-										borderRadius={0}
-										paddingHorizontal="m"
+										borderRadius={14}
+										paddingVertical="m"
 										backgroundColor="red3"
 										style={{
-											minHeight: 52,
-											paddingTop: 16,
-											paddingBottom: 16 + bottomPadding,
-											elevation: 3,
-											shadowColor: '#000',
-											shadowOffset: { width: 0, height: 2 },
-											shadowOpacity: 0.2,
-											shadowRadius: 4,
+											shadowColor: palette.primary,
+											shadowOffset: { width: 0, height: 4 },
+											shadowOpacity: 0.3,
+											shadowRadius: 8,
+											elevation: 6,
 										}}
 									>
 										<Text
 											color="white"
-											fontSize={16}
-											fontFamily={fonts.bold}
-											letterSpacing={0.3}
+											fontSize={15}
+											fontFamily={fonts.semiBold}
+											letterSpacing={0.2}
 										>
-											🚪 Logout
+											Log out
 										</Text>
 									</Box>
 								</Pressable>

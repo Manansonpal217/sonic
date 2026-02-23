@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
 	headerContainer: {
 		position: 'relative',
 		width: '100%',
-		marginBottom: 20,
+		marginBottom: 0,
 	},
 	headerImage: {
 		width: '100%',
@@ -480,6 +480,7 @@ const styles = StyleSheet.create({
 	},
 	welcomeContainer: {
 		paddingHorizontal: 24,
+		marginTop: -32,
 		marginBottom: 24,
 	},
 	formContainer: {

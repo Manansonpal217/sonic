@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Modal, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Modal, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native';
 import { DrawersItem } from './Drawer';
 
 const { width } = Dimensions.get('window');
+const DRAWER_WIDTH = Math.min(width * 0.84, 340);
 
 export interface DrawerMenuProps {
 	isOpen: boolean;
@@ -12,7 +13,7 @@ export interface DrawerMenuProps {
 	onClose: () => void;
 }
 
-// Simple drawer implementation for Expo Go (without native modules)
+// Premium drawer implementation for Expo Go (without native modules)
 export const DrawerMenuExpoGo: React.FC<DrawerMenuProps> = ({
 	isOpen,
 	children,
@@ -33,7 +34,7 @@ export const DrawerMenuExpoGo: React.FC<DrawerMenuProps> = ({
 					activeOpacity={1}
 					onPress={onClose}
 				>
-					<View style={styles.drawer}>
+					<View style={styles.drawer} onStartShouldSetResponder={() => true}>
 						<DrawersItem onClosePress={onClosePress} />
 					</View>
 				</TouchableOpacity>
@@ -45,13 +46,27 @@ export const DrawerMenuExpoGo: React.FC<DrawerMenuProps> = ({
 const styles = StyleSheet.create({
 	overlay: {
 		flex: 1,
-		backgroundColor: 'rgba(0, 0, 0, 0.5)',
+		backgroundColor: 'rgba(0, 0, 0, 0.45)',
 		flexDirection: 'row',
 	},
 	drawer: {
-		width: width * 0.8,
+		width: DRAWER_WIDTH,
 		height: '100%',
 		backgroundColor: 'white',
+		borderTopRightRadius: 0,
+		borderBottomRightRadius: 0,
+		overflow: 'hidden',
+		...Platform.select({
+			ios: {
+				shadowColor: '#000',
+				shadowOffset: { width: -4, height: 0 },
+				shadowOpacity: 0.15,
+				shadowRadius: 12,
+			},
+			android: {
+				elevation: 16,
+			},
+		}),
 	},
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Animated, TextInput, StyleSheet, View } from 'react-native';
+import { Animated, TextInput, StyleSheet, View, Pressable } from 'react-native';
 import { Box } from '../Box';
 import { Text } from '../Text';
 import { fonts } from '../../style';
@@ -45,6 +45,7 @@ export const AnimatedInput: React.FC<AnimatedInputProps> = ({
 	onBlur,
 }) => {
 	const [isFocused, setIsFocused] = useState(false);
+	const inputRef = useRef<TextInput>(null);
 	const focusAnim = useRef(new Animated.Value(0)).current;
 	const labelAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
 	const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -85,16 +86,6 @@ export const AnimatedInput: React.FC<AnimatedInputProps> = ({
 		outputRange: [18, -10],
 	});
 
-	const labelFontSize = labelAnim.interpolate({
-		inputRange: [0, 1],
-		outputRange: [15, 12],
-	});
-
-	const labelColor = labelAnim.interpolate({
-		inputRange: [0, 1],
-		outputRange: hasError ? ['#ff6b6b', '#ff6b6b'] : ['#9D9D9D', '#842B25'],
-	});
-
 	const handleFocus = () => {
 		setIsFocused(true);
 		onFocus?.();
@@ -117,6 +108,9 @@ export const AnimatedInput: React.FC<AnimatedInputProps> = ({
 				},
 			]}
 		>
+		<Pressable
+			onPress={() => editable && inputRef.current?.focus()}
+		>
 			<Animated.View
 				style={[
 					styles.inputContainer,
@@ -128,27 +122,32 @@ export const AnimatedInput: React.FC<AnimatedInputProps> = ({
 				]}
 			>
 				{icon && (
-					<View style={{ position: 'absolute', left: 16, top: 16, zIndex: 10 }}>
+					<View style={{ position: 'absolute', left: 16, top: 16, zIndex: 10 }} pointerEvents="none">
 						{icon}
 					</View>
 				)}
-				
-				<Animated.Text
+
+				<Animated.View
+					pointerEvents="none"
 					style={[
 						styles.label,
 						{
 							top: labelTop,
-							fontSize: labelFontSize,
-							color: labelColor,
 							left: icon ? 48 : 16,
 						},
 					]}
 				>
-					{label}
-					{isRequired && <Text color="red"> *</Text>}
-				</Animated.Text>
+					<Text
+						fontSize={isFocused || value ? 12 : 15}
+						fontFamily={fonts.medium}
+						color={hasError ? 'red3' : (isFocused || value ? 'primary' : 'gray')}
+					>
+						{`${label || ''}${isRequired ? ' *' : ''}`}
+					</Text>
+				</Animated.View>
 
 				<TextInput
+					ref={inputRef}
 					style={[
 						styles.input,
 						{
@@ -176,11 +175,12 @@ export const AnimatedInput: React.FC<AnimatedInputProps> = ({
 					</View>
 				)}
 			</Animated.View>
+		</Pressable>
 
 			{hasError && errorMessage && (
 				<Animated.View style={{ opacity: scaleAnim }}>
 					<Text
-						color="red"
+						color="red3"
 						fontSize={12}
 						fontFamily={fonts.regular}
 						marginTop="es"

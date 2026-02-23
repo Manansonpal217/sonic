@@ -175,7 +175,7 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 	refreshCartCount,
 }: HeaderProps) => {
 	const insets = useSafeAreaInsets();
-	const topPadding = Math.max(insets.top, 44); // Ensure at least 44px for Dynamic Island
+	const topPadding = insets.top + 8; // Compact: safe area + minimal header padding
 	
 	const handleProfilePress = () => {
 		if (onProfilePress) {
@@ -300,10 +300,11 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 		<Animated.View style={headerAnimatedStyle}>
 			<Box backgroundColor="white" paddingBottom="s" style={{ paddingTop: topPadding }}>
 				<Box 
-					height={64} 
+					minHeight={48}
 					flexDirection="row" 
 					alignItems="center"
 					paddingHorizontal="r"
+					paddingVertical="xs"
 				>
 					{/* Hamburger Menu Button */}
 					<AnimatedButton onPress={onMenuPress} delay={0}>
@@ -342,10 +343,10 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 						</Box>
 					</AnimatedButton>
 					
-					{/* Logo - positioned right next to hamburger */}
+					{/* Logo - compact size */}
 					<Logo 
-						width={50} 
-						height={45} 
+						width={44} 
+						height={40} 
 					/>
 
 					{/* Right side icons - flex to push to the right */}
@@ -419,7 +420,7 @@ export const DashboardHeader: React.FC<HeaderProps> = observer(({
 						</AnimatedButton>
 					</Box>
 				</Box>
-				<Box paddingHorizontal="r" paddingTop="s" paddingBottom="s">
+				<Box paddingHorizontal="r" paddingTop="xs" paddingBottom="xs">
 					<Search value={search} onChangeText={onSearch} />
 				</Box>
 			</Box>

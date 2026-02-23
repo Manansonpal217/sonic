@@ -44,6 +44,10 @@ export const API_ENDPOINTS = {
   customizeOrders: '/api/customize-orders/',
   customizeOrder: (id: number) => `/api/customize-orders/${id}/`,
   
+  // Product Leads
+  productLeads: '/api/product-leads/',
+  productLead: (id: number) => `/api/product-leads/${id}/`,
+
   // Cart
   cart: '/api/cart/',
   cartItem: (id: number) => `/api/cart/${id}/`,
