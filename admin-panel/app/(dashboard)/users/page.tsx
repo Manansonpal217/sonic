@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useUsers, useDeleteUser, useApproveUser } from '@/lib/hooks/useUsers';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import { formatDate } from '@/lib/utils/formatters';
 import { PageHeader } from '@/components/layout/PageHeader';
 import Link from 'next/link';
 
-export default function UsersPage() {
+function UsersPageContent() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -237,4 +237,16 @@ export default function UsersPage() {
   );
 }
 
+export default function UsersPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <PageHeader title="Users" description="Manage user accounts" />
+        <Skeleton className="h-64 w-full rounded-lg" />
+      </div>
+    }>
+      <UsersPageContent />
+    </Suspense>
+  );
+}
 
