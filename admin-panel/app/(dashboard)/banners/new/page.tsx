@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
@@ -54,7 +54,7 @@ export default function NewBannerPage() {
     setValue,
     watch,
   } = useForm<BannerFormData>({
-    resolver: zodResolver(bannerSchema),
+    resolver: zodResolver(bannerSchema) as Resolver<BannerFormData>,
     defaultValues: {
       banner_status: true,
       banner_order: 0,

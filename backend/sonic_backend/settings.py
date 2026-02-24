@@ -80,8 +80,14 @@ ASGI_APPLICATION = 'sonic_backend.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-# Prefer DATABASE_URL when set (e.g. DigitalOcean App Platform: ${yourdb.DATABASE_URL})
+# Prefer DATABASE_URL when set (e.g. DigitalOcean App Platform: set in App/Component env vars)
 _db_url = config('DATABASE_URL', default='')
+if not DEBUG and not _db_url:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        'DATABASE_URL must be set in production (e.g. in Digital Ocean App → Settings → Environment Variables). '
+        'Add DATABASE_URL with your Supabase connection string.'
+    )
 if _db_url:
     DATABASES = {
         'default': dj_database_url.parse(_db_url, conn_max_age=600, conn_health_checks=True),

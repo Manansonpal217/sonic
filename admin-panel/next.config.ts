@@ -15,6 +15,11 @@ const nextConfig = {
         port: '8000',
         pathname: '/media/**',
       },
+      {
+        protocol: 'https' as const,
+        hostname: 'sonic-db-n7v6t.ondigitalocean.app',
+        pathname: '/media/**',
+      },
     ],
     unoptimized: process.env.NODE_ENV === 'development',
   },
