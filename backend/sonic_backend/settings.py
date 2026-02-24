@@ -5,6 +5,7 @@ Django settings for sonic_backend project.
 from pathlib import Path
 from decouple import config
 import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -79,17 +80,23 @@ ASGI_APPLICATION = 'sonic_backend.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='sonic_db'),
-        'USER': config('DB_USER', default='sonic_user'),
-        'PASSWORD': config('DB_PASSWORD', default='sonic_password'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
+# Prefer DATABASE_URL when set (e.g. DigitalOcean App Platform: ${yourdb.DATABASE_URL})
+_db_url = config('DATABASE_URL', default='')
+if _db_url:
+    DATABASES = {
+        'default': dj_database_url.parse(_db_url, conn_max_age=600, conn_health_checks=True),
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='sonic_db'),
+            'USER': config('DB_USER', default='sonic_user'),
+            'PASSWORD': config('DB_PASSWORD', default='sonic_password'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
 
 
 # Password validation
@@ -193,22 +200,21 @@ CSRF_TRUSTED_ORIGINS = config(
 # Custom User Model
 AUTH_USER_MODEL = 'sonic_app.User'
 
-# Channels configuration
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+# Channels configuration – use Redis when REDIS_URL is set (production), else InMemory (dev)
+_redis_url = config('REDIS_URL', default='')
+if _redis_url:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {'hosts': [_redis_url]},
+        }
     }
-}
-
-# For production, use Redis:
-# CHANNEL_LAYERS = {
-#     'default': {
-#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#         'CONFIG': {
-#             'hosts': [config('REDIS_URL', default='redis://localhost:6379')],
-#         },
-#     },
-# }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer'
+        }
+    }
 
 # Pearl SMS (OTP)
 PEARLSMS_API_KEY = config('PEARLSMS_API_KEY', default='')

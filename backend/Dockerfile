@@ -30,7 +30,8 @@ RUN uv pip install --system \
     drf-spectacular>=0.27.0 \
     channels>=4.0.0 \
     channels-redis>=4.1.0 \
-    daphne>=4.0.0
+    daphne>=4.0.0 \
+    dj-database-url>=2.1.0
 
 # Copy project files
 COPY . .
@@ -41,5 +42,5 @@ RUN python manage.py collectstatic --noinput || true
 # Expose port
 EXPOSE 8000
 
-# Create migrations, run migrations, then start server
-CMD ["sh", "-c", "python manage.py makemigrations --noinput && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+# Run migrations and start ASGI server with Daphne (production-ready)
+CMD ["sh", "-c", "python manage.py migrate --noinput && daphne -b 0.0.0.0 -p 8000 sonic_backend.asgi:application"]

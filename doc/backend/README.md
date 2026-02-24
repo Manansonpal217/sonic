@@ -299,9 +299,58 @@ Key environment variables (see `.env.example`):
 - `DB_NAME` - PostgreSQL database name
 - `DB_USER` - PostgreSQL username
 - `DB_PASSWORD` - PostgreSQL password
-- `DB_HOST` - Database host
+- `DB_HOST` - Database host (**must be the DB service name in Docker/Kubernetes**, e.g. `db` or `postgres`, not `localhost`)
 - `DB_PORT` - Database port
 - `CORS_ALLOWED_ORIGINS` - Comma-separated CORS origins
+
+### Kubernetes / container orchestration
+
+If you deploy the backend image to **Kubernetes** (or any environment where the app and PostgreSQL run in different pods/containers), the app will get "Connection refused" to `localhost:5432` unless you override the database URL:
+
+- Set **`DB_HOST`** to the **PostgreSQL service hostname** in your cluster (e.g. `postgres`, `sonic-postgres`, or whatever your Postgres Service is named).
+- Set **`DB_PORT=5432`** (internal port).
+- Ensure `DB_NAME`, `DB_USER`, and `DB_PASSWORD` match your Postgres deployment.
+
+Example (Kubernetes Deployment env):
+
+```yaml
+env:
+  - name: DB_HOST
+    value: "postgres"   # or your Postgres Service name
+  - name: DB_PORT
+    value: "5432"
+  - name: DB_NAME
+    valueFrom:
+      secretKeyRef:
+        name: sonic-db
+        key: db-name
+  # ... DB_USER, DB_PASSWORD from Secret as needed
+```
+
+Without this, the container uses `localhost` and tries to connect to Postgres inside its own pod, so the readiness probe fails and migrations exit with "Connection refused".
+
+### DigitalOcean App Platform
+
+When you deploy on **DigitalOcean App Platform** and add a **PostgreSQL database** (or use a managed DB), bind it to your backend component. Then either:
+
+**Option A – Use `DATABASE_URL` (simplest)**  
+In the backend component’s **Environment Variables**, add:
+
+- **Key:** `DATABASE_URL`  
+- **Value:** `${your_database_name.DATABASE_URL}`  
+
+Replace `your_database_name` with the name of your database component (e.g. `db` → `${db.DATABASE_URL}`). App Platform will inject the full Postgres URL at runtime. The backend supports `DATABASE_URL` and will use it instead of `DB_*` when set.
+
+**Option B – Map individual variables**  
+If you prefer separate vars, add:
+
+- `DB_HOST` = `${your_database_name.HOSTNAME}`
+- `DB_PORT` = `${your_database_name.PORT}`
+- `DB_USER` = `${your_database_name.USERNAME}`
+- `DB_PASSWORD` = `${your_database_name.PASSWORD}`
+- `DB_NAME` = `${your_database_name.DATABASE}` (or your DB name, e.g. `sonic_db`)
+
+Again, replace `your_database_name` with your database component name. Ensure the database component is in the same app and bound to the backend so these variables are available.
 
 ## Development
 
