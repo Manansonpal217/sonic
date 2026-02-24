@@ -16,9 +16,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // For protected routes, check authentication via cookie/session
-  // This is a basic implementation - in production, you'd verify the session token
-  const isAuthenticated = request.cookies.has('sessionid') || request.cookies.has('csrftoken');
+  // Session cookies (sessionid/csrftoken) are set by the API on its domain, so they're not
+  // present when navigating on our domain. We set admin_authenticated on this domain after login.
+  const isAuthenticated =
+    request.cookies.has('admin_authenticated') ||
+    request.cookies.has('sessionid') ||
+    request.cookies.has('csrftoken');
 
   if (!isAuthenticated && !request.nextUrl.pathname.startsWith('/login')) {
     const loginUrl = new URL('/login', request.url);

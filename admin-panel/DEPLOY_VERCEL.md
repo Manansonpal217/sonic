@@ -68,6 +68,20 @@ Your backend must allow the admin panel’s Vercel URL for CORS and CSRF.
 
 ---
 
+## CORS still failing? (DigitalOcean backend)
+
+If the admin panel shows "CORS error" on login even after adding env vars:
+
+1. **Exact value** – In DigitalOcean App → your backend component → **Settings** → **App-Level Environment Variables**, set:
+   - `CORS_ALLOWED_ORIGINS` = `https://sonic-xyz.vercel.app` (no trailing slash, no spaces; add others comma-separated if needed, e.g. `http://localhost:3000,https://sonic-xyz.vercel.app`)
+   - `CSRF_TRUSTED_ORIGINS` = same value as above
+
+2. **Redeploy** – Changing env vars does **not** restart the running app. Go to **Deployments** → open the **⋮** on the latest deployment → **Redeploy**, or push a small change to trigger a new deploy.
+
+3. **Check the component** – If the app has multiple components (e.g. API + worker), set the variables for the component that serves the API (the one that receives browser requests).
+
+---
+
 ## Optional: custom domain
 
 In Vercel: **Settings** → **Domains** → add your domain (e.g. `admin.yourdomain.com`). Then add that same URL to `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS` on the backend.

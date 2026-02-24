@@ -44,6 +44,8 @@ function LoginForm() {
       const response = await authApi.login(data);
       setUser(response.user || { email: data.user_email });
       setAuthenticated(true);
+      // Set cookie on this domain so middleware allows redirect (API session cookies are on API domain)
+      document.cookie = 'admin_authenticated=1; path=/; max-age=86400'; // 24h
       toast.success('Login successful');
       const redirectTo = searchParams.get('redirect') || '/dashboard';
       router.push(redirectTo);

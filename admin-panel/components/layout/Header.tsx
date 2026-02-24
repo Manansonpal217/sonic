@@ -21,6 +21,7 @@ export function Header() {
   const router = useRouter();
 
   const handleLogout = () => {
+    document.cookie = 'admin_authenticated=; path=/; max-age=0';
     logout();
     router.push('/login');
   };
