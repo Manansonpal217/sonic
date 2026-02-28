@@ -231,11 +231,10 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 	};
 
 	const deleteAccountApiCall = async () => {
-		// const response = await authFactory.deleteAccountApi();
-		// if (response.isSuccess) {
-		// 	await handleLogout();
-		// }
-		await handleLogout();
+		const response = await authFactory.deleteAccountApi();
+		if (response.isSuccess) {
+			await handleLogout();
+		}
 	};
 
 	return (

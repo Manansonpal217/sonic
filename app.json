@@ -23,7 +23,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sonic.todoapp",
+      "bundleIdentifier": "com.sonic.inara",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to scan product QR codes."
       }
@@ -33,7 +33,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#EFE2D9"
       },
-      "package": "com.sonic.todoapp"
+      "package": "com.sonic.inara"
     },
     "web": {
       "favicon": "./assets/favicon.png"

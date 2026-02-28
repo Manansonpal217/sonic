@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.utils import timezone
 from django.db.models import Q
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.csrf import csrf_exempt
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -1313,4 +1313,22 @@ def update_location(request):
             {'error': 'Session not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@extend_schema(
+    summary="Delete Account",
+    description="Soft-delete the authenticated user's account and log them out.",
+    responses={200: {'description': 'Account deleted'}, 401: {'description': 'Not authenticated'}},
+)
+def account_delete(request):
+    user = request.user
+    user.is_delete = True
+    user.is_active = False
+    user.deleted_at = timezone.now()
+    user.save()
+    logout(request)
+    return Response({'message': 'Account deleted successfully'}, status=status.HTTP_200_OK)
 

@@ -1,4 +1,4 @@
-package com.sonic.todoapp
+package com.sonic.inara
 
 import android.app.Application
 import android.content.res.Configuration

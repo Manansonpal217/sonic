@@ -1,4 +1,4 @@
-package com.sonic.todoapp
+package com.sonic.inara
 
 import android.os.Build
 import android.os.Bundle

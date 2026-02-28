@@ -1,5 +1,5 @@
 import { getHttp } from '../core/Http';
-import { LOGIN, REGISTRATION, SEND_OTP, VERIFY_OTP } from '../api/EndPoint';
+import { LOGIN, REGISTRATION, SEND_OTP, VERIFY_OTP, DELETE_ACCOUNT } from '../api/EndPoint';
 import { LoginApiParams, LoginApiResponse } from '../api/LoginApi';
 import { RegistrationApiParams, RegistrationApiResponse } from '../api/RegistrationApi';
 import { SendOTPApiParams, SendOTPApiResponse, VerifyOTPApiParams, VerifyOTPApiResponse } from '../api/OTPApi';
@@ -61,6 +61,12 @@ class AuthFactory {
 			}, null);
 		}
 
+		return result;
+	}
+
+	async deleteAccountApi() {
+		const http = getHttp();
+		const result = await http.post<{ message: string }>(DELETE_ACCOUNT());
 		return result;
 	}
 }

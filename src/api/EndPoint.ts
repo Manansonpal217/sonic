@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-const PRODUCTION_API = 'https://api.sonicjewellersltd.in/app';
+const PRODUCTION_API = 'https://sonic-db-n7v6t.ondigitalocean.app/app';
 
 function getDevBaseUrl(): string {
 	const env = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -28,7 +28,7 @@ export const LOGIN = (): string => `${BASE_URL}/client-login`;
 export const REGISTRATION = (): string => `${BASE_URL}/client-registration`;
 export const SEND_OTP = (): string => `${BASE_URL}/send-otp`;
 export const VERIFY_OTP = (): string => `${BASE_URL}/verify-otp`;
-export const UPDATE_LOCATION = (): string => `${BASE_URL}/update-location`;
+
 export const PRODUCT_LIST = (): string => `${BASE_URL}/product-list`;
 export const PRODUCT_DETAIL = (): string => `${BASE_URL}/product-details`;
 export const PRODUCT_FORM_RESPONSE = (): string => `${BASE_URL}/save-form-response`;
