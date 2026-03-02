@@ -3,6 +3,27 @@ import { Result, success, failure } from './Result';
 import { getHttpClient } from './HttpClient';
 
 const GENERIC_ERROR = 'Something went wrong. Please try again.';
+const NETWORK_ERROR = 'Unable to connect. Please check your internet and try again.';
+
+function getProductionError(error: any, safeBackendMessage?: string): string {
+	const code = error?.code || '';
+	const message = (error?.message || '').toLowerCase();
+	// Network/connection failures
+	if (
+		code === 'ECONNREFUSED' ||
+		code === 'ETIMEDOUT' ||
+		code === 'ERR_NETWORK' ||
+		message.includes('network error') ||
+		message.includes('timeout')
+	) {
+		return NETWORK_ERROR;
+	}
+	// 4xx responses - show backend's user-facing message (already sanitized)
+	if (error?.response && error.response.status >= 400 && error.response.status < 500 && safeBackendMessage) {
+		return safeBackendMessage;
+	}
+	return GENERIC_ERROR;
+}
 
 function sanitizeUserMessage(raw: unknown): string {
 	if (raw == null) return GENERIC_ERROR;
@@ -30,7 +51,7 @@ export class Http {
 			}
 			const rawMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Request failed';
 			const safeMessage = sanitizeUserMessage(typeof rawMessage === 'string' ? rawMessage : 'Request failed');
-			const userMessage = !__DEV__ ? GENERIC_ERROR : safeMessage;
+			const userMessage = !__DEV__ ? getProductionError(error, safeMessage) : safeMessage;
 			return failure(userMessage, error.response?.data?.message);
 		}
 	}
@@ -67,7 +88,7 @@ export class Http {
 				errorMessage = 'This item is already in your cart';
 			}
 			const safeMessage = sanitizeUserMessage(errorMessage);
-			const userMessage = !__DEV__ ? GENERIC_ERROR : safeMessage;
+			const userMessage = !__DEV__ ? getProductionError(error, safeMessage) : safeMessage;
 			return failure(userMessage, error.response?.data?.message);
 		}
 	}
@@ -79,7 +100,7 @@ export class Http {
 		} catch (error: any) {
 			const rawMessage = error.response?.data?.message || error.message || 'Request failed';
 			const safeMessage = sanitizeUserMessage(typeof rawMessage === 'string' ? rawMessage : 'Request failed');
-			const userMessage = !__DEV__ ? GENERIC_ERROR : safeMessage;
+			const userMessage = !__DEV__ ? getProductionError(error, safeMessage) : safeMessage;
 			return failure(userMessage, error.response?.data?.message);
 		}
 	}
@@ -94,7 +115,7 @@ export class Http {
 				error.message ||
 				'Request failed';
 			const safeMessage = sanitizeUserMessage(typeof errorMessage === 'string' ? errorMessage : 'Request failed');
-			const userMessage = !__DEV__ ? GENERIC_ERROR : safeMessage;
+			const userMessage = !__DEV__ ? getProductionError(error, safeMessage) : safeMessage;
 			return failure(userMessage, error.response?.data?.message);
 		}
 	}
@@ -106,7 +127,7 @@ export class Http {
 		} catch (error: any) {
 			const rawMessage = error.response?.data?.message || error.message || 'Request failed';
 			const safeMessage = sanitizeUserMessage(typeof rawMessage === 'string' ? rawMessage : 'Request failed');
-			const userMessage = !__DEV__ ? GENERIC_ERROR : safeMessage;
+			const userMessage = !__DEV__ ? getProductionError(error, safeMessage) : safeMessage;
 			return failure(userMessage, error.response?.data?.message);
 		}
 	}

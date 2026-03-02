@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Keyboard, Animated, TouchableOpacity, StyleSheet, View, Dimensions } from 'react-native';
-import { Box, Image, Screen, StatusBarType, Text, Pressable, Logo, Toast } from '../components';
+import { Box, Image, Screen, StatusBarType, Text, Pressable, Toast } from '../components';
 import { Images } from '../assets';
 import { fonts } from '../style';
 import { DeviceHelper } from '../helper/DeviceHelper';
@@ -238,7 +238,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 					/>
 					<View style={styles.gradientOverlay} />
 					
-					{/* Floating Logo */}
+					{/* Floating Logo - INARA wordmark, scaled to fit and display fully */}
 					<Animated.View
 						style={[
 							styles.logoContainer,
@@ -247,10 +247,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 							},
 						]}
 					>
-					<Logo
-						width={100}
-						height={90}
-					/>
+						<Image
+							source={Images.loginLogo}
+							style={styles.loginLogoImage}
+							resizeMode="contain"
+						/>
 					</Animated.View>
 				</Animated.View>
 
@@ -464,11 +465,14 @@ const styles = StyleSheet.create({
 	},
 	logoContainer: {
 		position: 'absolute',
-		top: '40%',
+		top: '35%',
+		left: 20,
 		right: 20,
+		alignItems: 'center',
+		justifyContent: 'center',
 		backgroundColor: 'white',
-		borderRadius: 60,
-		padding: 10,
+		borderRadius: 12,
+		padding: 16,
 		shadowColor: '#000',
 		shadowOffset: {
 			width: 0,
@@ -477,6 +481,10 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.3,
 		shadowRadius: 8,
 		elevation: 8,
+	},
+	loginLogoImage: {
+		width: Math.min(width * 0.7, 280),
+		height: Math.min(width * 0.25, 100),
 	},
 	welcomeContainer: {
 		paddingHorizontal: 24,
