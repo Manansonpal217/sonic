@@ -20,10 +20,13 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { NotificationSender } from '@/components/dashboard/NotificationSender';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 
 export default function NotificationsPage() {
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [notificationToDelete, setNotificationToDelete] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['notifications', { page, page_size: 20 }],
@@ -41,9 +44,15 @@ export default function NotificationsPage() {
     },
   });
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this notification?')) {
-      await deleteNotification.mutateAsync(id);
+  const handleDeleteClick = (id: number) => {
+    setNotificationToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (notificationToDelete) {
+      await deleteNotification.mutateAsync(notificationToDelete);
+      setNotificationToDelete(null);
     }
   };
 
@@ -105,7 +114,7 @@ export default function NotificationsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(notification.id)}
+                        onClick={() => handleDeleteClick(notification.id)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
@@ -143,6 +152,15 @@ export default function NotificationsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Notification"
+        description="Are you sure you want to delete this notification? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteNotification.isPending}
+      />
     </div>
   );
 }

@@ -32,7 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getMediaUrl } from '@/lib/utils/formatters';
-import Image from 'next/image';
+import { MediaImage } from '@/components/ui/media-image';
 import { productVariantsApi } from '@/lib/api/products';
 import { toast } from 'sonner';
 
@@ -302,12 +302,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 />
                 {imagePreview && (
                   <div className="mt-2">
-                    <Image
+                    <MediaImage
                       src={imagePreview}
                       alt="Preview"
                       width={128}
                       height={128}
-                      className="h-32 w-32 object-cover rounded"
+                      className="h-32 w-32"
                     />
                   </div>
                 )}

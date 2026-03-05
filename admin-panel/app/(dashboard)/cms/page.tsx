@@ -19,10 +19,13 @@ import { formatDate } from '@/lib/utils/formatters';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 
 export default function CMSPage() {
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [cmsToDelete, setCmsToDelete] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['cms', { page, page_size: 20 }],
@@ -40,9 +43,15 @@ export default function CMSPage() {
     },
   });
 
-  const handleDelete = async (slug: string) => {
-    if (confirm('Are you sure you want to delete this CMS page?')) {
-      await deleteCMS.mutateAsync(slug);
+  const handleDeleteClick = (slug: string) => {
+    setCmsToDelete(slug);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (cmsToDelete) {
+      await deleteCMS.mutateAsync(cmsToDelete);
+      setCmsToDelete(null);
     }
   };
 
@@ -106,7 +115,7 @@ export default function CMSPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(page.cms_slug)}
+                        onClick={() => handleDeleteClick(page.cms_slug)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
@@ -144,6 +153,15 @@ export default function CMSPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete CMS Page"
+        description="Are you sure you want to delete this CMS page? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteCMS.isPending}
+      />
     </div>
   );
 }

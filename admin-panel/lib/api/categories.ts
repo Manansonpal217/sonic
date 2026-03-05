@@ -70,6 +70,7 @@ export const categoriesApi = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 60000, // 60s for create (image upload can be slow)
       }
     );
     return response.data;
@@ -90,6 +91,7 @@ export const categoriesApi = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 60000, // 60s for update (image upload can be slow)
       }
     );
     return response.data;

@@ -30,7 +30,8 @@ import { Eye, Trash2, ChevronDown, ChevronRight, Mail, Phone, MapPin, Building }
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, formatCurrency, getMediaUrl } from '@/lib/utils/formatters';
 import Link from 'next/link';
-import Image from 'next/image';
+import { MediaImage } from '@/components/ui/media-image';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import apiClient from '@/lib/api/client';
 import { getFullUrl, API_ENDPOINTS } from '@/lib/api/endpoints';
 import { toast } from 'sonner';
@@ -56,10 +57,18 @@ export default function OrdersPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<number | null>(null);
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this order?')) {
-      await deleteOrder.mutateAsync(id);
+  const handleDeleteClick = (id: number) => {
+    setOrderToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (orderToDelete) {
+      await deleteOrder.mutateAsync(orderToDelete);
+      setOrderToDelete(null);
     }
   };
   
@@ -276,7 +285,7 @@ export default function OrdersPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(order.id)}
+                            onClick={() => handleDeleteClick(order.id)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -359,12 +368,12 @@ export default function OrdersPage() {
                     {selectedOrder.order_items.map((item: any) => (
                       <div key={item.id} className="flex items-center gap-4 p-3 border rounded">
                         {item.product_image && (
-                          <Image
-                            src={getMediaUrl(item.product_image) || ''}
+                          <MediaImage
+                            src={getMediaUrl(item.product_image)}
                             alt={item.product_name}
                             width={60}
                             height={60}
-                            className="rounded object-cover"
+                            className="h-[60px] w-[60px]"
                           />
                         )}
                         <div className="flex-1">
@@ -389,6 +398,15 @@ export default function OrdersPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Order"
+        description="Are you sure you want to delete this order? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteOrder.isPending}
+      />
     </div>
   );
 }

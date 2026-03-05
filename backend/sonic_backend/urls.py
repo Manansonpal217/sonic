@@ -26,8 +26,10 @@ urlpatterns = [
     path('docs/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
-# Serve media files in development
-if settings.DEBUG:
+# Serve media files in development (DEBUG or SERVE_MEDIA for Docker with DEBUG=False)
+from decouple import config
+_serve_media = settings.DEBUG or config('SERVE_MEDIA', default=False, cast=bool)
+if _serve_media:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

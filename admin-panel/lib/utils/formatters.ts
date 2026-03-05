@@ -29,15 +29,23 @@ export const formatCurrency = (amount: string | number): string => {
 
 export const getMediaUrl = (path: string | null | undefined): string | null => {
   if (!path) return null;
-  const MEDIA_BASE_URL = process.env.NEXT_PUBLIC_MEDIA_BASE_URL || 'http://localhost:8000/media';
-  // API returns full URLs - use as-is
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  // Relative paths - prepend media base
-  if (path.startsWith('/media')) {
-    const base = MEDIA_BASE_URL.replace(/\/media\/?$/, '');
-    return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+  const p = String(path).trim();
+  // Extract actual /media/categories/xyz.jpg from malformed URLs
+  const mediaPathMatch = p.match(/\/media\/[a-zA-Z0-9_]+\/[^?\s#]+\.(?:jpe?g|png|gif|webp)/i);
+  if (mediaPathMatch) return mediaPathMatch[0];
+  // Full URL: extract pathname
+  if (p.startsWith('http://') || p.startsWith('https://')) {
+    try {
+      const url = new URL(p);
+      if (url.pathname.startsWith('/media')) return url.pathname;
+    } catch {
+      /* fall through */
+    }
   }
-  return `${MEDIA_BASE_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+  // Clean /media/ path
+  if (p.startsWith('/media')) return p.startsWith('/') ? p : `/${p}`;
+  // Relative path like "categories/xyz.jpg"
+  return `/media/${p.replace(/^\//, '')}`;
 };
 
 

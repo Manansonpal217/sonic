@@ -4,13 +4,14 @@ import { useAuthStore } from '@/lib/store/authStore';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
-// Create axios instance
+// Create axios instance - call backend directly (no proxy)
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true, // For same-origin; Bearer token used when cross-origin
+  timeout: 30000, // 30s default - prevents indefinite hanging
 });
 
 // Request interceptor
@@ -68,6 +69,11 @@ apiClient.interceptors.response.use(
       // Handle 500 Server Error
       if (status >= 500) {
         toast.error('Server error. Please try again later.');
+      }
+
+      // Handle timeout (408 or axios timeout)
+      if (status === 408 || error.code === 'ECONNABORTED') {
+        toast.error('Request timed out. The server may be slow—please try again.');
       }
 
       // Handle validation errors (400)

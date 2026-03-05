@@ -29,7 +29,8 @@ import { Plus, Search, Edit, Trash2, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, getMediaUrl } from '@/lib/utils/formatters';
-import Image from 'next/image';
+import { MediaImage } from '@/components/ui/media-image';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import type { Category, CategoryCreate, CategoryUpdate } from '@/lib/api/categories';
 
 export default function CategoriesPage() {
@@ -38,6 +39,7 @@ export default function CategoriesPage() {
   const { data, isLoading } = useCategories({ search, page, page_size: 20 });
   const deleteCategory = useDeleteCategory();
   const createCategory = useCreateCategory();
+  const isCreating = createCategory.isPending;
   const updateCategory = useUpdateCategory();
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -51,10 +53,18 @@ export default function CategoriesPage() {
   });
   
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this category?')) {
-      await deleteCategory.mutateAsync(id);
+  const handleDeleteClick = (id: number) => {
+    setCategoryToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (categoryToDelete) {
+      await deleteCategory.mutateAsync(categoryToDelete);
+      setCategoryToDelete(null);
     }
   };
   
@@ -153,8 +163,8 @@ export default function CategoriesPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" >
-                  Create Category
+                <Button type="submit" disabled={isCreating}>
+                  {isCreating ? 'Creating…' : 'Create Category'}
                 </Button>
               </DialogFooter>
             </form>
@@ -212,19 +222,13 @@ export default function CategoriesPage() {
               data?.results?.map((category) => (
                 <TableRow key={category.id}>
                   <TableCell>
-                    {category.category_image ? (
-                      <Image
-                        src={getMediaUrl(category.category_image) || ''}
-                        alt={category.category_name}
-                        width={48}
-                        height={48}
-                        className="rounded object-cover"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded bg-muted flex items-center justify-center text-muted-foreground">
-                        No image
-                      </div>
-                    )}
+                    <MediaImage
+                      src={getMediaUrl(category.category_image)}
+                      alt={category.category_name}
+                      width={48}
+                      height={48}
+                      className="h-12 w-12"
+                    />
                   </TableCell>
                   <TableCell className="font-medium">{category.category_name}</TableCell>
                   <TableCell className="max-w-xs truncate">{category.category_description || '-'}</TableCell>
@@ -257,7 +261,7 @@ export default function CategoriesPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(category.id)}
+                        onClick={() => handleDeleteClick(category.id)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -326,6 +330,15 @@ export default function CategoriesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Category"
+        description="Are you sure you want to delete this category? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteCategory.isPending}
+      />
     </div>
   );
 }

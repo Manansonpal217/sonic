@@ -19,6 +19,7 @@ import { formatDate } from '@/lib/utils/formatters';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -31,6 +32,8 @@ const statusColors: Record<string, string> = {
 export default function CustomizeOrdersPage() {
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['customize-orders', { page, page_size: 20 }],
@@ -48,9 +51,15 @@ export default function CustomizeOrdersPage() {
     },
   });
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this custom order?')) {
-      await deleteOrder.mutateAsync(id);
+  const handleDeleteClick = (id: number) => {
+    setOrderToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (orderToDelete) {
+      await deleteOrder.mutateAsync(orderToDelete);
+      setOrderToDelete(null);
     }
   };
 
@@ -110,7 +119,7 @@ export default function CustomizeOrdersPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(order.id)}
+                        onClick={() => handleDeleteClick(order.id)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
@@ -148,6 +157,15 @@ export default function CustomizeOrdersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Custom Order"
+        description="Are you sure you want to delete this custom order? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteOrder.isPending}
+      />
     </div>
   );
 }

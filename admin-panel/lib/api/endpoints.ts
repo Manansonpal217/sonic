@@ -87,7 +87,7 @@ export const API_ENDPOINTS = {
 export const getFullUrl = (endpoint: string): string => {
   if (endpoint.startsWith('http')) return endpoint;
   if (endpoint.startsWith('/api')) {
-    const base = API_BASE_URL.replace('/api', '');
+    const base = API_BASE_URL.replace(/\/api\/?$/, '');
     return `${base}${endpoint}`;
   }
   return `${API_BASE_URL}${endpoint}`;

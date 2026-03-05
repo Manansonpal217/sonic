@@ -30,6 +30,7 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/utils/formatters';
 import { toast } from 'sonner';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 
 export default function NotificationTypesPage() {
   const [page, setPage] = useState(1);
@@ -37,6 +38,8 @@ export default function NotificationTypesPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<NotificationType | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [typeToDelete, setTypeToDelete] = useState<number | null>(null);
   
   const [formData, setFormData] = useState<NotificationTypeCreate>({
     notif_name: '',
@@ -87,9 +90,15 @@ export default function NotificationTypesPage() {
     },
   });
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this notification type?')) {
-      await deleteType.mutateAsync(id);
+  const handleDeleteClick = (id: number) => {
+    setTypeToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (typeToDelete) {
+      await deleteType.mutateAsync(typeToDelete);
+      setTypeToDelete(null);
     }
   };
 
@@ -224,7 +233,7 @@ export default function NotificationTypesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(type.notif_id)}
+                        onClick={() => handleDeleteClick(type.notif_id)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
@@ -301,6 +310,15 @@ export default function NotificationTypesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Notification Type"
+        description="Are you sure you want to delete this notification type? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteType.isPending}
+      />
     </div>
   );
 }

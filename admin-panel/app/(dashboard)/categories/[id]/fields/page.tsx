@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useCategory } from '@/lib/hooks/useCategories';
 import { useCategoryFields, useDeleteCategoryField } from '@/lib/hooks/useCategoryFields';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Plus, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 
 const FIELD_TYPES = [
   { value: 'text', label: 'Text' },
@@ -32,10 +33,18 @@ export default function CategoryFieldsPage({ params }: { params: Promise<{ id: s
   const { data: category, isLoading: categoryLoading } = useCategory(categoryId);
   const { data: fieldsData, isLoading: fieldsLoading } = useCategoryFields({ category_id: categoryId });
   const deleteField = useDeleteCategoryField();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [fieldToDelete, setFieldToDelete] = useState<number | null>(null);
 
-  const handleDelete = async (fieldId: number) => {
-    if (confirm('Are you sure you want to delete this field?')) {
-      await deleteField.mutateAsync(fieldId);
+  const handleDeleteClick = (fieldId: number) => {
+    setFieldToDelete(fieldId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (fieldToDelete) {
+      await deleteField.mutateAsync(fieldToDelete);
+      setFieldToDelete(null);
     }
   };
 
@@ -141,7 +150,7 @@ export default function CategoryFieldsPage({ params }: { params: Promise<{ id: s
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(field.id)}
+                        onClick={() => handleDeleteClick(field.id)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -153,6 +162,15 @@ export default function CategoryFieldsPage({ params }: { params: Promise<{ id: s
           </TableBody>
         </Table>
       </div>
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Field"
+        description="Are you sure you want to delete this field? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteField.isPending}
+      />
     </div>
   );
 }

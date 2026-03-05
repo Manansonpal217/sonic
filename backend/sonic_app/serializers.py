@@ -35,12 +35,21 @@ class CategorySerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         if representation.get('category_image'):
             from django.conf import settings
+            import re
             image_path = representation['category_image']
+            # If DB stored full URL (bug), extract path like categories/xyz.jpg
+            if image_path.startswith('http://') or image_path.startswith('https://'):
+                parts = image_path.split('/media/')
+                image_path = parts[-1] if len(parts) > 1 else image_path
+            # Handle path with embedded URL
+            elif '/media/' in image_path and '://' in image_path:
+                match = re.search(r'/media/([a-zA-Z0-9_/]+/[^?\s#]+\.(?:jpe?g|png|gif|webp))', image_path, re.I)
+                image_path = match.group(1) if match else image_path
             media_url = getattr(settings, 'MEDIA_URL', '/media/')
             if not media_url.endswith('/') and image_path and not image_path.startswith('/'):
                 media_url = media_url + '/'
             full_path = f"{media_url.rstrip('/')}/{image_path.lstrip('/')}" if image_path else None
-            if full_path:
+            if full_path and '://' not in full_path:
                 request = self.context.get('request')
                 if request:
                     representation['category_image'] = request.build_absolute_uri(full_path)

@@ -8,8 +8,8 @@ services:
       POSTGRES_USER: ${DB_USER:-sonic_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-sonic_password}
     ports:
-      # Use 5433 by default so we don't conflict with other Postgres on 5432
-      - "${DB_PORT:-5433}:5432"
+      # Use 5434 by default (5432/5433 often in use by local Postgres)
+      - "${DB_PORT:-5434}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -40,6 +40,8 @@ services:
       - DB_NAME=${DB_NAME:-sonic_db}
       - DB_USER=${DB_USER:-sonic_user}
       - DB_PASSWORD=${DB_PASSWORD:-sonic_password}
+      - SERVE_MEDIA=True
+      - DEBUG=True
 
   pgweb:
     image: sosedoff/pgweb:latest

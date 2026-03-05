@@ -17,18 +17,27 @@ import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, getMediaUrl } from '@/lib/utils/formatters';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { MediaImage } from '@/components/ui/media-image';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import Link from 'next/link';
-import Image from 'next/image';
 
 export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const { data, isLoading } = useProducts({ search, page, page_size: 20 });
   const deleteProduct = useDeleteProduct();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<number | null>(null);
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this product?')) {
-      await deleteProduct.mutateAsync(id);
+  const handleDeleteClick = (id: number) => {
+    setProductToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (productToDelete) {
+      await deleteProduct.mutateAsync(productToDelete);
+      setProductToDelete(null);
     }
   };
 
@@ -91,19 +100,13 @@ export default function ProductsPage() {
               data?.results?.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>
-                    {product.product_image ? (
-                      <Image
-                        src={getMediaUrl(product.product_image) || ''}
-                        alt={product.product_name}
-                        width={48}
-                        height={48}
-                        className="rounded object-cover"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
-                        No Image
-                      </div>
-                    )}
+                    <MediaImage
+                      src={getMediaUrl(product.product_image)}
+                      alt={product.product_name}
+                      width={48}
+                      height={48}
+                      className="h-12 w-12"
+                    />
                   </TableCell>
                   <TableCell className="font-medium">{product.product_name}</TableCell>
                   <TableCell>{product.product_weight != null && product.product_weight !== '' ? product.product_weight : '-'}</TableCell>
@@ -137,7 +140,7 @@ export default function ProductsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => handleDeleteClick(product.id)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
@@ -177,6 +180,15 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Product"
+        description="Are you sure you want to delete this product? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteProduct.isPending}
+      />
     </div>
   );
 }

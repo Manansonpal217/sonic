@@ -17,13 +17,16 @@ import { Plus, Edit, Trash2, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, getMediaUrl } from '@/lib/utils/formatters';
 import Link from 'next/link';
-import Image from 'next/image';
+import { MediaImage } from '@/components/ui/media-image';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function BannersPage() {
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bannerToDelete, setBannerToDelete] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['banners', { page, page_size: 20 }],
@@ -41,9 +44,15 @@ export default function BannersPage() {
     },
   });
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this banner?')) {
-      await deleteBanner.mutateAsync(id);
+  const handleDeleteClick = (id: number) => {
+    setBannerToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (bannerToDelete) {
+      await deleteBanner.mutateAsync(bannerToDelete);
+      setBannerToDelete(null);
     }
   };
 
@@ -94,19 +103,13 @@ export default function BannersPage() {
               data?.results?.map((banner) => (
                 <TableRow key={banner.id}>
                   <TableCell>
-                    {banner.banner_image ? (
-                      <Image
-                        src={getMediaUrl(banner.banner_image) || ''}
-                        alt={banner.banner_title}
-                        width={96}
-                        height={64}
-                        className="rounded object-cover"
-                      />
-                    ) : (
-                      <div className="h-16 w-24 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
-                        No Image
-                      </div>
-                    )}
+                    <MediaImage
+                      src={getMediaUrl(banner.banner_image)}
+                      alt={banner.banner_title}
+                      width={96}
+                      height={64}
+                      className="h-16 w-24"
+                    />
                   </TableCell>
                   <TableCell className="font-medium">{banner.banner_title}</TableCell>
                   <TableCell>{banner.banner_product_name || '-'}</TableCell>
@@ -132,7 +135,7 @@ export default function BannersPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(banner.id)}
+                        onClick={() => handleDeleteClick(banner.id)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -172,6 +175,15 @@ export default function BannersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Banner"
+        description="Are you sure you want to delete this banner? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteBanner.isPending}
+      />
     </div>
   );
 }

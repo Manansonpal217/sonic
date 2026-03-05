@@ -18,6 +18,7 @@ import { Plus, Search, Edit, Trash2, Eye, CheckCircle, XCircle } from 'lucide-re
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/utils/formatters';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import Link from 'next/link';
 
 function UsersPageContent() {
@@ -25,6 +26,8 @@ function UsersPageContent() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [approvalFilter, setApprovalFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     if (searchParams.get('pending') === '1') {
@@ -41,9 +44,15 @@ function UsersPageContent() {
   const deleteUser = useDeleteUser();
   const approveUser = useApproveUser();
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      await deleteUser.mutateAsync(id);
+  const handleDeleteClick = (id: number) => {
+    setUserToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (userToDelete) {
+      await deleteUser.mutateAsync(userToDelete);
+      setUserToDelete(null);
     }
   };
 
@@ -193,7 +202,7 @@ function UsersPageContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(user.id)}
+                        onClick={() => handleDeleteClick(user.id)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
@@ -233,6 +242,15 @@ function UsersPageContent() {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete User"
+        description="Are you sure you want to delete this user? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteUser.isPending}
+      />
     </div>
   );
 }

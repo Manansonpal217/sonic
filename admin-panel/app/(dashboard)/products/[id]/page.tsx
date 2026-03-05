@@ -9,7 +9,7 @@ import { ArrowLeft, Edit, Download } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, getMediaUrl } from '@/lib/utils/formatters';
-import Image from 'next/image';
+import { MediaImage } from '@/components/ui/media-image';
 import QRCode from 'qrcode';
 
 function slugify(name: string): string {
@@ -123,19 +123,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <CardTitle>Image</CardTitle>
           </CardHeader>
           <CardContent>
-            {product.product_image ? (
-              <Image
-                src={getMediaUrl(product.product_image) || ''}
-                alt={product.product_name}
-                width={400}
-                height={300}
-                className="rounded object-cover w-full"
-              />
-            ) : (
-              <div className="h-64 bg-gray-200 rounded flex items-center justify-center text-gray-500">
-                No Image
-              </div>
-            )}
+            <MediaImage
+              src={getMediaUrl(product.product_image)}
+              alt={product.product_name}
+              width={400}
+              height={300}
+              className="h-64 w-full rounded object-cover"
+            />
           </CardContent>
         </Card>
 
