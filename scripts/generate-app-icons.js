@@ -52,13 +52,16 @@ async function generateIcons() {
 	}
 
 	try {
+		// Safe zone: Android adaptive icons clip to ~66% center. Use 580px so full INARA stays visible.
+		const ICON_SAFE_WIDTH = 580;
+
 		// 1. App icon: 1024x1024
-		const icon = await createLogoImage(1024, 1024, 800, WHITE);
+		const icon = await createLogoImage(1024, 1024, ICON_SAFE_WIDTH, WHITE);
 		await icon.toFile(path.join(ASSETS_DIR, 'icon.png'));
 		console.log('Generated: assets/icon.png (1024x1024)');
 
-		// 2. Adaptive icon (Android): 1024x1024 - same as icon
-		const adaptiveIcon = await createLogoImage(1024, 1024, 800, WHITE);
+		// 2. Adaptive icon (Android): 1024x1024 - sized for safe zone so INARA isn't clipped
+		const adaptiveIcon = await createLogoImage(1024, 1024, ICON_SAFE_WIDTH, WHITE);
 		await adaptiveIcon.toFile(path.join(ASSETS_DIR, 'adaptive-icon.png'));
 		console.log('Generated: assets/adaptive-icon.png (1024x1024)');
 

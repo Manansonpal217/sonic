@@ -5,6 +5,9 @@ dist/
 npm-debug.*
 *.jks
 *.p8
+# Release signing - never commit
+android/keystore.properties
+android/app/release.keystore
 *.p12
 *.key
 *.mobileprovision

@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "fonts": [
       "src/assets/fonts/NunitoSans_7pt-Regular.ttf",
       "src/assets/fonts/NunitoSans_7pt-Bold.ttf",
@@ -29,15 +31,24 @@
       }
     },
     "android": {
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#EFE2D9"
       },
-      "package": "com.sonic.inara"
+      "package": "com.sonic.inara",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "inara-app"
+    "scheme": "inara-app",
+    "plugins": [
+      "expo-asset",
+      ["expo-camera", { "recordAudioAndroid": false }]
+    ]
   }
 }

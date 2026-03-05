@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Animated, TextInput, StyleSheet, View, Pressable } from 'react-native';
 import { Box } from '../Box';
 import { Text } from '../Text';
-import { fonts } from '../../style';
+import { fonts, palette } from '../../style';
 import { createScaleAnimation, createShakeAnimation } from '../../Utils/animations';
 
 export interface AnimatedInputProps {
@@ -78,7 +78,7 @@ export const AnimatedInput: React.FC<AnimatedInputProps> = ({
 
 	const borderColor = focusAnim.interpolate({
 		inputRange: [0, 1],
-		outputRange: hasError ? ['#ff6b6b', '#ff6b6b'] : ['#E2E2E2', '#842B25'],
+		outputRange: hasError ? ['#ff6b6b', '#ff6b6b'] : ['#E5E3E0', palette.primary],
 	});
 
 	const labelTop = labelAnim.interpolate({

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Animated, TouchableOpacity, StyleSheet, View, Dimensions } from 'react-native';
+import { Animated, TouchableOpacity, StyleSheet, View, Dimensions, Linking, Pressable } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Controller, useForm } from 'react-hook-form';
 import { Box, CommonHeader, Image, Screen, StatusBarType, Text, Pressable } from '../components';
@@ -16,6 +16,7 @@ import {
 	createSlideUpAnimation,
 } from '../Utils/animations';
 import { navigate, goBack, Route } from '../navigation/AppNavigation';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '../api/EndPoint';
 
 const { width } = Dimensions.get('window');
 
@@ -468,38 +469,49 @@ export const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ onNaviga
 							},
 						]}
 					>
-						<TouchableOpacity
-							style={styles.checkboxContainer}
-							onPress={() => setIsChecked(!isChecked)}
-						>
-							<View
-								style={[
-									styles.checkbox,
-									isChecked && styles.checkboxChecked,
-								]}
+						<View style={styles.checkboxContainer}>
+							<TouchableOpacity
+								onPress={() => setIsChecked(!isChecked)}
+								activeOpacity={0.7}
 							>
-								{isChecked && (
-									<Text fontSize={16} color="white">
-										✓
-									</Text>
-								)}
-							</View>
-							<Text
-								fontSize={13}
-								fontFamily={fonts.regular}
-								color="black"
-								style={{ marginLeft: 8, flex: 1 }}
-							>
-								I agree to the{' '}
-								<Text fontSize={13} fontFamily={fonts.bold} color="red3">
-									Terms & Conditions
-								</Text>{' '}
-								and{' '}
-								<Text fontSize={13} fontFamily={fonts.bold} color="red3">
-									Privacy Policy
+								<View
+									style={[
+										styles.checkbox,
+										isChecked && styles.checkboxChecked,
+									]}
+								>
+									{isChecked && (
+										<Text fontSize={16} color="white">
+											✓
+										</Text>
+									)}
+								</View>
+							</TouchableOpacity>
+							<View style={[styles.termsTextRow, { marginLeft: 8, flex: 1 }]}>
+								<Text fontSize={13} fontFamily={fonts.regular} color="black">
+									I agree to the{' '}
 								</Text>
-							</Text>
-						</TouchableOpacity>
+								<Pressable
+									onPress={() => Linking.openURL(TERMS_URL)}
+									hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+								>
+									<Text fontSize={13} fontFamily={fonts.bold} color="red3" style={styles.linkText}>
+										Terms & Conditions
+									</Text>
+								</Pressable>
+								<Text fontSize={13} fontFamily={fonts.regular} color="black">
+									{' '}and{' '}
+								</Text>
+								<Pressable
+									onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+									hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+								>
+									<Text fontSize={13} fontFamily={fonts.bold} color="red3" style={styles.linkText}>
+										Privacy Policy
+									</Text>
+								</Pressable>
+							</View>
+						</View>
 					</Animated.View>
 				)}
 
@@ -599,6 +611,14 @@ const styles = StyleSheet.create({
 	checkboxChecked: {
 		backgroundColor: '#842B25',
 		borderColor: '#842B25',
+	},
+	termsTextRow: {
+		flexDirection: 'row',
+		flexWrap: 'wrap',
+		alignItems: 'center',
+	},
+	linkText: {
+		textDecorationLine: 'underline',
 	},
 	dot: {
 		width: 8,

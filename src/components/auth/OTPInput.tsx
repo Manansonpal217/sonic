@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { View, TextInput, StyleSheet, Animated } from 'react-native';
 import { Text } from '../Text';
-import { fonts } from '../../style';
+import { fonts, palette } from '../../style';
 import { createScaleAnimation } from '../../Utils/animations';
 
 export interface OTPInputProps {
@@ -81,8 +81,8 @@ export const OTPInput: React.FC<OTPInputProps> = ({
 
 	const getBorderColor = (index: number) => {
 		if (hasError) return '#ff6b6b';
-		if (focusedIndex === index) return '#842B25';
-		return '#E2E2E2';
+		if (focusedIndex === index) return palette.primary;
+		return '#E5E3E0';
 	};
 
 	return (

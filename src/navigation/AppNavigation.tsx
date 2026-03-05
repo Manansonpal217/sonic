@@ -124,46 +124,55 @@ export const AppNavigation = () => {
 	const [initialRoute, setInitialRoute] = useState<Route>(Route.Login);
 
 	useEffect(() => {
+		const AUTH_CHECK_TIMEOUT_MS = 8000; // Don't block app if API is slow/unreachable
+
 		const checkAuthAndAutoLogin = async () => {
-			try {
-				// Wait for auth store to initialize
-				await authStore.loadAuthData();
+			const timeoutPromise = new Promise<void>((resolve) => {
+				setTimeout(() => resolve(), AUTH_CHECK_TIMEOUT_MS);
+			});
 
-				// Check if user is already logged in
-				if (authStore.isLogin()) {
-					setInitialRoute(authStore.isApproved() ? Route.Dashboard : Route.ApprovalPending);
-					setIsLoading(false);
-					return;
-				}
+			const authPromise = (async () => {
+				try {
+					// Wait for auth store to initialize
+					await authStore.loadAuthData();
 
-				// Check if credentials are saved (remember me was checked)
-				const savedCredentials = await authStore.getSavedCredentials();
-				if (savedCredentials) {
-					// Attempt auto-login
-					const response = await authFactory.loginApi(
-						savedCredentials.email,
-						savedCredentials.password
-					);
-
-					if (response.isSuccess && response.data) {
-						await authStore.setLoginData(
-							response.data,
-							savedCredentials // Keep credentials saved
-						);
+					// Check if user is already logged in
+					if (authStore.isLogin()) {
 						setInitialRoute(authStore.isApproved() ? Route.Dashboard : Route.ApprovalPending);
+						return;
+					}
+
+					// Check if credentials are saved (remember me was checked)
+					const savedCredentials = await authStore.getSavedCredentials();
+					if (savedCredentials) {
+						// Attempt auto-login
+						const response = await authFactory.loginApi(
+							savedCredentials.email,
+							savedCredentials.password
+						);
+
+						if (response.isSuccess && response.data) {
+							await authStore.setLoginData(
+								response.data,
+								savedCredentials // Keep credentials saved
+							);
+							setInitialRoute(authStore.isApproved() ? Route.Dashboard : Route.ApprovalPending);
+						} else {
+							// Auto-login failed, clear saved credentials
+							await authStore.clearLoginData();
+							setInitialRoute(Route.Login);
+						}
 					} else {
-						// Auto-login failed, clear saved credentials
-						await authStore.clearLoginData();
 						setInitialRoute(Route.Login);
 					}
-				} else {
+				} catch (error) {
 					setInitialRoute(Route.Login);
 				}
-			} catch (error) {
-				setInitialRoute(Route.Login);
-			} finally {
-				setIsLoading(false);
-			}
+			})();
+
+			// Whichever finishes first (auth completes or timeout)
+			await Promise.race([authPromise, timeoutPromise]);
+			setIsLoading(false);
 		};
 
 		checkAuthAndAutoLogin();

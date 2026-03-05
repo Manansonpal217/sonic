@@ -27,7 +27,18 @@ export default function App() {
 		'NunitoSans_7pt-LightItalic': require('./src/assets/fonts/NunitoSans_7pt-LightItalic.ttf'),
 	});
 
+	const [fontsReady, setFontsReady] = useState(false);
 	const [navigationReady, setNavigationReady] = useState(false);
+
+	// Fallback: if fonts don't load within 5s (e.g. production bundle issue), show app anyway
+	useEffect(() => {
+		if (fontsLoaded) {
+			setFontsReady(true);
+			return;
+		}
+		const t = setTimeout(() => setFontsReady(true), 5000);
+		return () => clearTimeout(t);
+	}, [fontsLoaded]);
 
 	// One-time health check so we see in Metro if the backend is reachable
 	useEffect(() => {
@@ -42,7 +53,7 @@ export default function App() {
 			.catch((e) => console.error('[API] Health check error:', e?.message ?? e));
 	}, []);
 
-	if (!fontsLoaded) {
+	if (!fontsReady) {
 		return (
 			<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
 				<ActivityIndicator size="large" color="#842B25" />

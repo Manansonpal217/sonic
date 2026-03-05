@@ -18,6 +18,19 @@ export const BASE_URL = __DEV__ ? getDevBaseUrl() : PRODUCTION_API;
 
 /** Base origin for media and WebSocket (no /app path). e.g. http://localhost:8000 */
 export const API_ORIGIN = BASE_URL.replace(/\/app\/?$/, '');
+
+/** Legal URLs for Play Store compliance - override via env if hosted elsewhere */
+export const PRIVACY_POLICY_URL =
+	(process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL || '').trim() ||
+	`${API_ORIGIN}/privacy/`;
+export const TERMS_URL =
+	(process.env.EXPO_PUBLIC_TERMS_URL || '').trim() ||
+	`${API_ORIGIN}/terms/`;
+
+/** Web-based account deletion for users who uninstalled the app. Play Store compliance. */
+export const ACCOUNT_DELETE_WEB_URL =
+	(process.env.EXPO_PUBLIC_ACCOUNT_DELETE_WEB_URL || '').trim() ||
+	`${API_ORIGIN}/account-delete/`;
 /** Base URL for media assets. e.g. http://localhost:8000/media */
 export const MEDIA_BASE_URL = `${API_ORIGIN}/media`;
 /** WebSocket base. e.g. ws://localhost:8000 */

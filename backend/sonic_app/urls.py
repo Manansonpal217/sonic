@@ -7,7 +7,7 @@ from .views import (
     OrderViewSet, CustomizeOrdersViewSet, AddToCartViewSet, BannersViewSet,
     CMSViewSet, NotificationTypeViewSet, NotificationTableViewSet,
     OrderEmailsViewSet, SessionViewSet, client_login, client_registration,
-    send_otp, verify_otp, update_location, health, account_delete
+    send_otp, verify_otp, update_location, health, account_delete, account_delete_by_otp
 )
 
 router = DefaultRouter()
@@ -37,5 +37,6 @@ urlpatterns = [
     path('verify-otp', csrf_exempt(verify_otp), name='verify-otp'),
     path('update-location', update_location, name='update-location'),
     path('account-delete', csrf_exempt(account_delete), name='account-delete'),
+    path('account-delete-by-otp', csrf_exempt(account_delete_by_otp), name='account-delete-by-otp'),
 ]
 

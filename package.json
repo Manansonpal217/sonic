@@ -12,7 +12,9 @@
     "build:all": "eas build --platform all",
     "check:api": "./scripts/check-backend-connectivity.sh",
     "generate-icons": "node scripts/generate-app-icons.js",
-    "postinstall": "node scripts/copy-expo-gradle-plugin.js && node scripts/patch-expo-compose-plugin.js"
+    "postinstall": "node scripts/copy-expo-gradle-plugin.js && node scripts/patch-expo-compose-plugin.js",
+    "build:apk": "cd android && ./gradlew assembleRelease",
+    "build:aab": "cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",
@@ -21,8 +23,8 @@
     "@shopify/restyle": "^1.6.1",
     "axios": "^1.6.0",
     "expo": "^52.0.0",
+    "expo-asset": "~11.0.5",
     "expo-camera": "~16.0.18",
-    "expo-dev-client": "~5.0.20",
     "expo-font": "~13.0.4",
     "expo-status-bar": "~2.0.1",
     "mobx": "^6.13.0",
@@ -44,7 +46,6 @@
     "@babel/core": "^7.24.0",
     "@types/react": "~18.2.79",
     "babel-plugin-module-resolver": "^4.1.0",
-    "patch-package": "^8.0.1",
     "react-native-svg-transformer": "^1.5.2",
     "sharp": "^0.34.5",
     "typescript": "~5.3.3"

@@ -10,11 +10,16 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from sonic_app.legal_views import privacy_policy, terms_of_service, account_delete_page
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('sonic_app.urls')),
     path('app/', include('sonic_app.urls')),  # Add /app/ prefix for mobile app endpoints
+    # Legal pages for Play Store compliance
+    path('privacy/', privacy_policy),
+    path('terms/', terms_of_service),
+    path('account-delete/', account_delete_page),
     # Swagger/OpenAPI documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Keyboard, Animated, TouchableOpacity, StyleSheet, View, Dimensions } from 'react-native';
-import { Box, Image, Screen, StatusBarType, Text, Pressable, Toast } from '../components';
+import { Image, Screen, StatusBarType, Text, Toast } from '../components';
 import { Images } from '../assets';
 import { fonts } from '../style';
 import { DeviceHelper } from '../helper/DeviceHelper';
@@ -20,7 +20,7 @@ import { showErrorMessage, showSuccessMessage } from '../core';
 import { navigate, reset, Route } from '../navigation/AppNavigation';
 import { authStore } from '../stores/AuthStore';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export interface LoginScreenProps {
 	onNavigateToRegistration?: () => void;
@@ -214,13 +214,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 	};
 
 	return (
-		<Screen backgroundColor="white" statusBarType={StatusBarType.Dark}>
+		<Screen backgroundColor="beige" statusBarType={StatusBarType.Dark}>
 			<KeyboardAwareScrollView
 				extraHeight={20}
 				showsVerticalScrollIndicator={false}
 				contentContainerStyle={styles.scrollContent}
 			>
-				{/* Header Image with Gradient Overlay */}
+				{/* Elegant header - cream gradient with centered INARA logo */}
 				<Animated.View
 					style={[
 						styles.headerContainer,
@@ -230,15 +230,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 						},
 					]}
 				>
-					<Image
-						source={Images.loginImage}
-						width="100%"
-						height={DeviceHelper.calculateHeightRatio(200)}
-						style={styles.headerImage}
-					/>
-					<View style={styles.gradientOverlay} />
+					<View style={styles.headerGradient} />
 					
-					{/* Floating Logo - INARA wordmark, scaled to fit and display fully */}
+					{/* Centered INARA logo - refined, classy presentation */}
 					<Animated.View
 						style={[
 							styles.logoContainer,
@@ -252,10 +246,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 							style={styles.loginLogoImage}
 							resizeMode="contain"
 						/>
+						<View style={styles.logoAccent} />
 					</Animated.View>
 				</Animated.View>
 
-				{/* Welcome Text */}
+				{/* Welcome text - refined typography */}
 				<Animated.View
 					style={[
 						styles.welcomeContainer,
@@ -265,24 +260,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 					]}
 				>
 					<Text
-						fontSize={32}
-						color="black"
-						fontFamily={fonts.bold}
+						fontSize={26}
+						color="dark"
+						fontFamily={fonts.semiBold}
 						textAlign="center"
-						marginBottom="es"
+						marginBottom="xs"
+						letterSpacing={0.5}
 					>
-						{step === 'phone' ? 'Welcome Back' : 'Enter OTP'}
+						{step === 'phone' ? 'Welcome Back' : 'Verify Your Number'}
 					</Text>
 					<Text
-						fontSize={15}
+						fontSize={14}
 						color="gray"
 						fontFamily={fonts.regular}
 						textAlign="center"
 						lineHeight={22}
+						letterSpacing={0.3}
 					>
 						{step === 'phone' 
-							? 'Sign in with your phone number'
-							: `We've sent a verification code to ${phoneNumber}`
+							? 'Sign in with your phone number to continue'
+							: `Code sent to ${phoneNumber}`
 						}
 					</Text>
 				</Animated.View>
@@ -317,9 +314,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 										hasError={!!errors.phone_number}
 										errorMessage={errors.phone_number?.message as string}
 										isRequired
-										icon={
-											<Text fontSize={20}>📱</Text>
-										}
 									/>
 								)}
 							/>
@@ -334,17 +328,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 						</>
 					) : (
 						<>
-							{/* Back button */}
+							{/* Back button - subtle */}
 							<TouchableOpacity
 								onPress={handleBackToPhone}
 								style={styles.backButton}
+								activeOpacity={0.7}
 							>
 								<Text
-									color="red3"
-									fontSize={14}
+									color="gray"
+									fontSize={13}
 									fontFamily={fonts.medium}
+									letterSpacing={0.2}
 								>
-									← Change Phone Number
+									← Change number
 								</Text>
 							</TouchableOpacity>
 
@@ -400,7 +396,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 					)}
 				</Animated.View>
 
-				{/* Sign Up Link */}
+				{/* Sign Up Link - refined */}
 				{!keyboardStatus && (
 					<Animated.View
 						style={[
@@ -410,21 +406,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegistrati
 							},
 						]}
 					>
+						<View style={styles.signupDivider} />
 						<TouchableOpacity
 							onPress={handleCreateNowOnPress}
 							style={styles.signupButton}
+							activeOpacity={0.7}
 						>
 							<Text
-								fontSize={15}
-								color="black"
+								fontSize={14}
+								color="gray"
 								fontFamily={fonts.regular}
+								letterSpacing={0.2}
 							>
 								Don't have an account?{' '}
 							</Text>
 							<Text
-								fontSize={15}
-								fontFamily={fonts.bold}
+								fontSize={14}
+								fontFamily={fonts.semiBold}
 								color="red3"
+								letterSpacing={0.3}
 							>
 								Create now
 							</Text>
@@ -450,46 +450,44 @@ const styles = StyleSheet.create({
 	headerContainer: {
 		position: 'relative',
 		width: '100%',
+		height: DeviceHelper.calculateHeightRatio(220),
+		alignItems: 'center',
+		justifyContent: 'center',
 		marginBottom: 0,
 	},
-	headerImage: {
-		width: '100%',
-	},
-	gradientOverlay: {
-		position: 'absolute',
-		bottom: 0,
-		left: 0,
-		right: 0,
-		height: 100,
-		backgroundColor: 'rgba(255, 255, 255, 0.9)',
+	headerGradient: {
+		...StyleSheet.absoluteFillObject,
+		backgroundColor: '#EFE2D9',
 	},
 	logoContainer: {
-		position: 'absolute',
-		top: '35%',
-		left: 20,
-		right: 20,
 		alignItems: 'center',
 		justifyContent: 'center',
 		backgroundColor: 'white',
-		borderRadius: 12,
-		padding: 16,
-		shadowColor: '#000',
-		shadowOffset: {
-			width: 0,
-			height: 4,
-		},
-		shadowOpacity: 0.3,
-		shadowRadius: 8,
-		elevation: 8,
+		borderRadius: 16,
+		paddingVertical: 24,
+		paddingHorizontal: 40,
+		shadowColor: '#2B2A29',
+		shadowOffset: { width: 0, height: 6 },
+		shadowOpacity: 0.08,
+		shadowRadius: 16,
+		elevation: 6,
 	},
 	loginLogoImage: {
-		width: Math.min(width * 0.7, 280),
-		height: Math.min(width * 0.25, 100),
+		width: Math.min(width * 0.65, 260),
+		height: Math.min(width * 0.22, 88),
+	},
+	logoAccent: {
+		width: 40,
+		height: 3,
+		backgroundColor: '#DF1D3F',
+		borderRadius: 2,
+		marginTop: 16,
+		opacity: 0.7,
 	},
 	welcomeContainer: {
-		paddingHorizontal: 24,
-		marginTop: -32,
-		marginBottom: 24,
+		paddingHorizontal: 28,
+		marginTop: 28,
+		marginBottom: 28,
 	},
 	formContainer: {
 		flex: 1,
@@ -507,8 +505,15 @@ const styles = StyleSheet.create({
 		marginTop: -8,
 	},
 	signupContainer: {
-		paddingVertical: 24,
+		paddingVertical: 32,
 		alignItems: 'center',
+		paddingHorizontal: 24,
+	},
+	signupDivider: {
+		width: 48,
+		height: 1,
+		backgroundColor: '#E2E2E2',
+		marginBottom: 20,
 	},
 	signupButton: {
 		flexDirection: 'row',

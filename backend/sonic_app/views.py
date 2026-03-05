@@ -1332,3 +1332,97 @@ def account_delete(request):
     logout(request)
     return Response({'message': 'Account deleted successfully'}, status=status.HTTP_200_OK)
 
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@extend_schema(
+    summary="Delete Account by OTP (Web)",
+    description="Verify OTP and delete account. For users who uninstalled the app.",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'phone_number': {'type': 'string'},
+                'otp_code': {'type': 'string'},
+            },
+            'required': ['phone_number', 'otp_code'],
+        }
+    },
+    responses={
+        200: {'description': 'Account deleted'},
+        400: {'description': 'Invalid OTP or phone number'},
+    },
+)
+def account_delete_by_otp(request):
+    """Verify OTP and delete account. For web-based deletion without the app."""
+    serializer = VerifyOTPSerializer(data=request.data)
+    if not serializer.is_valid():
+        errors = serializer.errors
+        msg = errors.get('phone_number', errors.get('otp_code', ['Invalid request']))[0]
+        return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
+
+    phone_number = serializer.validated_data['phone_number']
+    otp_code = serializer.validated_data['otp_code']
+
+    try:
+        otp = OTP.objects.filter(
+            phone_number=phone_number,
+            is_verified=False,
+        ).order_by('-created_at').first()
+
+        if not otp:
+            return Response(
+                {'error': 'No OTP found. Please request a new OTP first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if otp.attempts >= MAX_OTP_VERIFY_ATTEMPTS:
+            otp.is_verified = True
+            otp.save()
+            return Response(
+                {'error': 'Too many failed attempts. Please request a new OTP.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if otp.is_expired():
+            otp.is_verified = True
+            otp.save()
+            return Response(
+                {'error': 'OTP has expired. Please request a new OTP.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if otp.otp_code != otp_code:
+            otp.attempts += 1
+            otp.save()
+            return Response(
+                {'error': 'Invalid OTP code'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = User.objects.filter(phone_number=phone_number, is_delete=False).first()
+        if not user:
+            return Response(
+                {'error': 'No account found for this phone number.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        otp.is_verified = True
+        otp.save()
+
+        user.is_delete = True
+        user.is_active = False
+        user.deleted_at = timezone.now()
+        user.save()
+
+        return Response({'message': 'Account deleted successfully'}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).exception("Account delete by OTP failed: %s", e)
+        return Response(
+            {'error': 'An error occurred. Please try again.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+

@@ -57,7 +57,7 @@ import { LogoutPopup } from './LogoutPopup';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getHttp } from '../../core';
 import { Category } from '../../api/CategoryApi';
-import { BASE_URL } from '../../api/EndPoint';
+import { BASE_URL, ACCOUNT_DELETE_WEB_URL } from '../../api/EndPoint';
 
 export interface DrawersProps {
 	onClosePress: () => void;
@@ -604,6 +604,21 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 										</Text>
 									</Box>
 								</Pressable>
+								<Pressable
+									onPress={() => {
+										setIsDeleteVisible(true);
+										onClosePress();
+									}}
+									style={{ width: '100%', marginTop: 12, alignItems: 'center' }}
+								>
+									<Text
+										fontSize={14}
+										fontFamily={fonts.medium}
+										style={{ color: palette.gray, textDecorationLine: 'underline' }}
+									>
+										Delete Account
+									</Text>
+								</Pressable>
 							</Animated.View>
 						</Box>
 					);
@@ -637,8 +652,9 @@ export const DrawersItem: React.FC<DrawersProps> = observer(({
 				title="Delete Account"
 				button1Label="Delete"
 				button2Label="cancel"
-				message="Are you sure you want to delete Account?"
+				message="Are you sure you want to delete your account?"
 				Visible={isDeleteVisible}
+				webDeletionUrl={ACCOUNT_DELETE_WEB_URL}
 			/>
 		</Box>
 	);
