@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 // Proxy media to backend so images load same-origin (avoids ERR_BLOCKED_BY_ORB)
-const mediaBackend = process.env.NEXT_PUBLIC_MEDIA_BASE_URL?.replace(/\/media\/?$/, '') || 'http://localhost:8000';
+// Derive from MEDIA_BASE_URL, or API_BASE_URL (e.g. .../api -> ...), or localhost
+const mediaBackend =
+  process.env.NEXT_PUBLIC_MEDIA_BASE_URL?.replace(/\/media\/?$/, '') ||
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/api\/?$/, '') ||
+  'http://localhost:8000';
 
 const nextConfig = {
   async rewrites() {

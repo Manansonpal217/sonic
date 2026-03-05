@@ -11,9 +11,11 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 from sonic_app.legal_views import privacy_policy, terms_of_service, account_delete_page
+from sonic_app.media_views import ServeDBMediaView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('media/<path:path>', ServeDBMediaView.as_view(), name='serve_db_media'),
     path('api/', include('sonic_app.urls')),
     path('app/', include('sonic_app.urls')),  # Add /app/ prefix for mobile app endpoints
     # Legal pages for Play Store compliance
@@ -26,11 +28,11 @@ urlpatterns = [
     path('docs/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
-# Serve media files in development (DEBUG or SERVE_MEDIA for Docker with DEBUG=False)
+# Media is served by ServeDBMediaView (DB storage with filesystem fallback)
+# Static files (JS, CSS) in development
 from decouple import config
-_serve_media = settings.DEBUG or config('SERVE_MEDIA', default=False, cast=bool)
-if _serve_media:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+_serve_static = settings.DEBUG or config('SERVE_MEDIA', default=False, cast=bool)
+if _serve_static:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 

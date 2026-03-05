@@ -52,6 +52,9 @@ Replace `your-admin.vercel.app` with your actual Vercel URL (e.g. `inara-admin.v
 - `DATABASE_URL` (from DigitalOcean managed DB if used)
 - `ALLOWED_HOSTS` (your DigitalOcean app URL)
 
+### Media storage (images)
+Images are stored in **PostgreSQL** (no S3 needed). The `StoredFile` model and `DatabaseStorage` backend persist uploads in the database.
+
 ---
 
 ## 3. Checklist

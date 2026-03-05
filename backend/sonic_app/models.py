@@ -606,3 +606,16 @@ class OTP(models.Model):
     def __str__(self):
         return f"OTP for {self.phone_number} - {self.otp_code}"
 
+
+class StoredFile(models.Model):
+    """Stores file content in PostgreSQL (for images/media without S3)."""
+    name = models.CharField(max_length=500, unique=True, db_index=True)
+    data = models.BinaryField()
+    content_type = models.CharField(max_length=255, default='application/octet-stream')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'sonic_app_storedfile'
+        verbose_name = 'Stored File'
+        verbose_name_plural = 'Stored Files'
+
