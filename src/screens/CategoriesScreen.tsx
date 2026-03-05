@@ -34,8 +34,16 @@ export const CategoriesScreen = () => {
   };
 
   const handleCategoryPress = (category: Category) => {
-    // Navigate to products screen with category filter
-    navigation.navigate('Products' as never, { categoryId: category.id, categoryName: category.category_name } as never);
+    const categoryImageUrl = category.category_image
+      ? (category.category_image.startsWith('http')
+          ? category.category_image
+          : `${MEDIA_BASE_URL}/${category.category_image.replace(/^\//, '')}`)
+      : undefined;
+    navigation.navigate('Products' as never, {
+      categoryId: category.id,
+      categoryName: category.category_name,
+      categoryImage: categoryImageUrl,
+    } as never);
   };
 
   const renderCategory = ({ item }: { item: Category }) => (
@@ -61,7 +69,11 @@ export const CategoriesScreen = () => {
       >
         {item.category_image ? (
           <Image
-            source={{ uri: `${MEDIA_BASE_URL}/${item.category_image}` }}
+            source={{
+              uri: item.category_image.startsWith('http')
+                ? item.category_image
+                : `${MEDIA_BASE_URL}/${item.category_image.replace(/^\//, '')}`,
+            }}
             style={{ width: 80, height: 80, borderRadius: 8 }}
           />
         ) : (

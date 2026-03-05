@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/lib/store/authStore';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -9,14 +10,19 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Important for Django session auth
+  withCredentials: true, // For same-origin; Bearer token used when cross-origin
 });
 
 // Request interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Bearer token for admin (works cross-origin when session cookies don't)
+    const token = useAuthStore.getState().token;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     // Add CSRF token if available (for Django)
-    const csrfToken = document.cookie
+    const csrfToken = typeof document !== 'undefined' && document.cookie
       .split('; ')
       .find(row => row.startsWith('csrftoken='))
       ?.split('=')[1];

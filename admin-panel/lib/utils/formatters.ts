@@ -30,12 +30,14 @@ export const formatCurrency = (amount: string | number): string => {
 export const getMediaUrl = (path: string | null | undefined): string | null => {
   if (!path) return null;
   const MEDIA_BASE_URL = process.env.NEXT_PUBLIC_MEDIA_BASE_URL || 'http://localhost:8000/media';
-  if (path.startsWith('http')) return path;
+  // API returns full URLs - use as-is
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  // Relative paths - prepend media base
   if (path.startsWith('/media')) {
-    const base = MEDIA_BASE_URL.replace('/media', '');
-    return `${base}${path}`;
+    const base = MEDIA_BASE_URL.replace(/\/media\/?$/, '');
+    return `${base}${path.startsWith('/') ? path : `/${path}`}`;
   }
-  return `${MEDIA_BASE_URL}/${path}`;
+  return `${MEDIA_BASE_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
 };
 
 

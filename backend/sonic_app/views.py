@@ -971,15 +971,29 @@ def client_login(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Create session for the authenticated user
+    # Create session for the authenticated user (Django session for same-origin)
     login(request, authenticated_user)
-    
+
+    # Create Session with Bearer token for admin panel (works cross-origin when session cookies don't)
+    import secrets
+    token = secrets.token_urlsafe(32)
+    admin_key = f"adm_{authenticated_user.id}"[:40]
+    Session.objects.update_or_create(
+        session_key=admin_key,
+        defaults={
+            'session_user': authenticated_user,
+            'auth_token': token,
+            'expire_date': timezone.now() + timezone.timedelta(days=7),
+        }
+    )
+
     # Serialize user data
     serializer = UserSerializer(authenticated_user)
-    
+
     return Response({
         'message': 'Login successful',
-        'user': serializer.data
+        'user': serializer.data,
+        'token': token,
     }, status=status.HTTP_200_OK)
 
 

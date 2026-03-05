@@ -24,7 +24,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setUser, setAuthenticated } = useAuthStore();
+  const { setUser, setToken, setAuthenticated } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -43,6 +43,7 @@ function LoginForm() {
     try {
       const response = await authApi.login(data);
       setUser(response.user || { email: data.user_email });
+      if (response.token) setToken(response.token);
       setAuthenticated(true);
       // Set cookie on this domain so middleware allows redirect (API session cookies are on API domain)
       document.cookie = 'admin_authenticated=1; path=/; max-age=86400'; // 24h

@@ -23,22 +23,30 @@ class CategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def get_products_count(self, obj):
-        """Get count of active products in this category"""
-        return obj.products.filter(is_delete=False, product_status=True).count()
+        """Get count of active parent products in this category (matches product list view)"""
+        return obj.products.filter(
+            product_parent_id__isnull=True,
+            is_delete=False,
+            product_status=True
+        ).count()
 
     def to_representation(self, instance):
         """Convert relative image URLs to absolute URLs"""
         representation = super().to_representation(instance)
         if representation.get('category_image'):
-            request = self.context.get('request')
-            if request:
-                representation['category_image'] = request.build_absolute_uri(representation['category_image'])
-            else:
-                from django.conf import settings
-                image_url = representation['category_image']
-                if image_url and not image_url.startswith('http'):
+            from django.conf import settings
+            image_path = representation['category_image']
+            media_url = getattr(settings, 'MEDIA_URL', '/media/')
+            if not media_url.endswith('/') and image_path and not image_path.startswith('/'):
+                media_url = media_url + '/'
+            full_path = f"{media_url.rstrip('/')}/{image_path.lstrip('/')}" if image_path else None
+            if full_path:
+                request = self.context.get('request')
+                if request:
+                    representation['category_image'] = request.build_absolute_uri(full_path)
+                else:
                     base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
-                    representation['category_image'] = f"{base_url.rstrip('/')}{image_url}"
+                    representation['category_image'] = f"{base_url.rstrip('/')}{full_path}"
         return representation
 
 

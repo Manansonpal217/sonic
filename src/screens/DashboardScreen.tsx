@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Box, Screen, StatusBarType, DrawerMenu, DashboardHeader, DashboardBanner, DashboardCategoryGrid, BannerItem, CategoryItem } from '../components';
 import { navigate, Route } from '../navigation/AppNavigation';
 import { getHttp } from '../core';
-import { BANNERS_ACTIVE, CATEGORIES_ACTIVE } from '../api/EndPoint';
+import { BANNERS_ACTIVE, CATEGORIES_ACTIVE, MEDIA_BASE_URL } from '../api/EndPoint';
 
 export const DashboardScreen: React.FC = () => {
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -55,11 +55,17 @@ export const DashboardScreen: React.FC = () => {
 	}, []);
 
 	const handleCategoryPress = (category: CategoryItem) => {
+		const categoryImageUrl = category.category_image
+			? (category.category_image.startsWith('http')
+					? category.category_image
+					: `${MEDIA_BASE_URL}/${category.category_image.replace(/^\//, '')}`)
+			: undefined;
 		navigate({
 			screenName: Route.ProductList,
 			params: {
 				categoryId: category.id,
 				categoryName: category.category_name,
+				categoryImage: categoryImageUrl,
 			},
 		});
 	};
