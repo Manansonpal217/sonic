@@ -17,7 +17,6 @@ import {
   Layers,
   ClipboardList,
   MessageSquare,
-  UserCheck,
 } from 'lucide-react';
 import { useUIStore } from '@/lib/store/uiStore';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,6 @@ const menuItems = [
   { title: 'Categories', href: '/categories', icon: Layers },
   { title: 'Products', href: '/products', icon: Package },
   { title: 'Orders', href: '/orders', icon: ShoppingCart },
-  { title: 'Product Leads', href: '/product-leads', icon: UserCheck },
   { title: 'Customize Orders', href: '/customize-orders', icon: ClipboardList },
   { title: 'Cart', href: '/cart', icon: ShoppingCart },
   { title: 'Banners', href: '/banners', icon: ImageIcon },
