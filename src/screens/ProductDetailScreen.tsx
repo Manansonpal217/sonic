@@ -9,7 +9,7 @@ import { getHttp } from '../core';
 import { Images } from '../assets';
 import { cartFactory } from '../factory/CartFactory';
 import { authStore } from '../stores/AuthStore';
-import { BASE_URL } from '../api/EndPoint';
+import { BASE_URL, getMediaUrl } from '../api/EndPoint';
 
 const { width } = Dimensions.get('window');
 
@@ -34,6 +34,7 @@ interface Product {
 	product_description?: string;
 	product_image?: string;
 	product_category_name?: string;
+	product_weight?: string | number | null;
 	field_values?: ProductFieldValue[];
 	variants?: ProductVariantItem[];
 	variant_dimension_labels?: string[];
@@ -400,7 +401,7 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 				>
 					{product.product_image ? (
 						<Image
-							source={{ uri: product.product_image }}
+							source={{ uri: getMediaUrl(product.product_image) ?? '' }}
 							style={{ width: '100%', height: '100%' }}
 							resizeMode="cover"
 						/>
@@ -425,25 +426,44 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = observer(
 						{product.product_name}
 					</Text>
 
-					{/* Category */}
-					{product.product_category_name && (
-						<Box
-							alignSelf="flex-start"
-							backgroundColor="gray5"
-							borderRadius={6}
-							paddingVertical="xs"
-							paddingHorizontal="s"
-							marginBottom="m"
-						>
-							<Text
-								fontSize={12}
-								fontFamily={fonts.regular}
-								color="gray"
+					{/* Category & Weight */}
+					<Box flexDirection="row" flexWrap="wrap" marginBottom="m" alignItems="center">
+						{product.product_category_name && (
+							<Box
+								backgroundColor="gray5"
+								borderRadius={6}
+								paddingVertical="xs"
+								paddingHorizontal="s"
+								marginEnd="s"
+								marginBottom="xs"
 							>
-								{product.product_category_name}
-							</Text>
-						</Box>
-					)}
+								<Text
+									fontSize={12}
+									fontFamily={fonts.regular}
+									color="gray"
+								>
+									{product.product_category_name}
+								</Text>
+							</Box>
+						)}
+						{product.product_weight != null && product.product_weight !== '' && (
+							<Box
+								backgroundColor="gray5"
+								borderRadius={6}
+								paddingVertical="xs"
+								paddingHorizontal="s"
+								marginBottom="xs"
+							>
+								<Text
+									fontSize={12}
+									fontFamily={fonts.medium}
+									color="black"
+								>
+									Weight: {String(product.product_weight)}
+								</Text>
+							</Box>
+						)}
+					</Box>
 
 					{/* Description */}
 					{product.product_description && (

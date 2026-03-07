@@ -7,6 +7,7 @@ import { authStore } from '../stores/AuthStore';
 import { goBack, Route, reset, navigate } from '../navigation/AppNavigation';
 import { fonts } from '../style';
 import { Image } from '../components/Image';
+import { getMediaUrl } from '../api/EndPoint';
 import { Logo } from '../components/Logo';
 import { cartFactory } from '../factory/CartFactory';
 import { CartItem } from '../api/CartApi';
@@ -336,8 +337,8 @@ export const CartScreen: React.FC = observer(() => {
 										>
 											{item.cart_product_image || item.product_image ? (
 												<Image
-													source={{ 
-														uri: item.cart_product_image || item.product_image || ''
+													source={{
+														uri: getMediaUrl(item.cart_product_image || item.product_image) ?? ''
 													}}
 													style={{ width: 80, height: 80 }}
 													resizeMode="cover"

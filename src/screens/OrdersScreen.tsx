@@ -13,7 +13,7 @@ import { orderFactory } from '../factory/OrderFactory';
 import { Order, OrderItem } from '../api/OrderApi';
 import { showErrorMessage, getHttp } from '../core';
 import { Images } from '../assets';
-import { BASE_URL } from '../api/EndPoint';
+import { BASE_URL, getMediaUrl } from '../api/EndPoint';
 
 // Status badge colors
 const getStatusColor = (status: string) => {
@@ -77,13 +77,12 @@ const formatTime = (dateString: string) => {
 	}
 };
 
-const OrderCard: React.FC<{ order: Order; onPress: () => void }> = ({ order, onPress }) => {
+const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
 	const statusColor = getStatusColor(order.order_status);
 	const statusBgColor = getStatusBgColor(order.order_status);
 
 	return (
-		<Pressable onPress={onPress}>
-			<Box
+		<Box
 				backgroundColor="white"
 				borderRadius={16}
 				padding="m"
@@ -155,7 +154,7 @@ const OrderCard: React.FC<{ order: Order; onPress: () => void }> = ({ order, onP
 									>
 										{item.product_image ? (
 											<Image
-												source={{ uri: item.product_image }}
+												source={{ uri: getMediaUrl(item.product_image) ?? '' }}
 												style={{ width: 50, height: 50 }}
 												resizeMode="cover"
 											/>
@@ -211,42 +210,22 @@ const OrderCard: React.FC<{ order: Order; onPress: () => void }> = ({ order, onP
 					)}
 				</Box>
 
-				{/* Divider */}
+				{/* Footer: item count only */}
 				<Box
 					height={1}
 					backgroundColor="gray5"
 					marginVertical="s"
 				/>
-
-				{/* Footer Row */}
-				<Box flexDirection="row" justifyContent="space-between" alignItems="center">
-					<Box>
-						<Text
-							fontSize={12}
-							fontFamily={fonts.medium}
-							color="gray"
-							marginBottom="xs"
-						>
-							{order.order_items?.length ?? 0} item(s)
-						</Text>
-					</Box>
-					<Box
-						backgroundColor="gray5"
-						borderRadius={8}
-						paddingHorizontal="s"
-						paddingVertical="xs"
+				<Box>
+					<Text
+						fontSize={12}
+						fontFamily={fonts.medium}
+						color="gray"
 					>
-						<Text
-							fontSize={12}
-							fontFamily={fonts.semiBold}
-							color="black"
-						>
-							View Details →
-						</Text>
-					</Box>
+						{order.order_items?.length ?? order.items_count ?? 0} item(s)
+					</Text>
 				</Box>
 			</Box>
-		</Pressable>
 	);
 };
 
@@ -358,13 +337,6 @@ export const OrdersScreen: React.FC = observer(() => {
 	const handleRefresh = () => {
 		setIsRefreshing(true);
 		loadOrders();
-	};
-
-	const handleOrderPress = (order: Order) => {
-		navigate({
-			screenName: Route.OrderDetail,
-			params: { orderId: order.id },
-		});
 	};
 
 	// Order statuses from backend Order model ORDER_STATUS_CHOICES
@@ -538,7 +510,6 @@ export const OrdersScreen: React.FC = observer(() => {
 								<OrderCard
 									key={`order-${order.id}`}
 									order={order}
-									onPress={() => handleOrderPress(order)}
 								/>
 							))}
 						</>

@@ -12,6 +12,7 @@ import { orderFactory } from '../factory/OrderFactory';
 import { Order, OrderItem } from '../api/OrderApi';
 import { showErrorMessage } from '../core';
 import { Images } from '../assets';
+import { getMediaUrl } from '../api/EndPoint';
 
 const getStatusColor = (status: string) => {
 	const normalizedStatus = status?.toLowerCase() || '';
@@ -78,11 +79,17 @@ export const OrderDetailScreen: React.FC = observer(() => {
 	const insets = useSafeAreaInsets();
 	const topPadding = insets.top + 8;
 	const route = useRoute();
-	const { orderId } = route.params as { orderId: number };
+	const params = route.params as { orderId?: number } | undefined;
+	const orderId = params?.orderId != null ? Number(params.orderId) : undefined;
 	const [order, setOrder] = useState<Order | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
+		if (orderId == null || Number.isNaN(orderId)) {
+			setIsLoading(false);
+			setOrder(null);
+			return;
+		}
 		const loadOrder = async () => {
 			try {
 				setIsLoading(true);
@@ -100,9 +107,7 @@ export const OrderDetailScreen: React.FC = observer(() => {
 			}
 		};
 
-		if (orderId) {
-			loadOrder();
-		}
+		loadOrder();
 	}, [orderId]);
 
 	if (isLoading) {
@@ -147,6 +152,7 @@ export const OrderDetailScreen: React.FC = observer(() => {
 
 	const statusColor = getStatusColor(order.order_status);
 	const statusBgColor = getStatusBgColor(order.order_status);
+	const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
 
 	return (
 		<Screen backgroundColor="gray5" statusBarType={StatusBarType.Dark}>
@@ -216,7 +222,7 @@ export const OrderDetailScreen: React.FC = observer(() => {
 						</Box>
 					</Box>
 					<Text fontSize={12} fontFamily={fonts.regular} color="gray">
-						Placed on {formatDate(order.order_date || order.created_at)} at {formatTime(order.order_date || order.created_at)}
+						Placed on {formatDate(order.order_date || order.created_at || '')} at {formatTime(order.order_date || order.created_at || '')}
 					</Text>
 				</Box>
 
@@ -240,18 +246,23 @@ export const OrderDetailScreen: React.FC = observer(() => {
 						color="black"
 						marginBottom="m"
 					>
-						Order Items ({order.order_items?.length || order.items_count || 0})
+						Order Items ({orderItems.length || order.items_count || 0})
 					</Text>
 
-					{order.order_items && order.order_items.length > 0 ? (
+					{orderItems.length > 0 ? (
 						<>
-							{order.order_items.map((item: OrderItem, index: number) => (
+							{orderItems.map((item: OrderItem, index: number) => {
+								const imageUri = item?.product_image ? getMediaUrl(item.product_image) : null;
+								const hasValidImage = !!imageUri && typeof imageUri === 'string' && imageUri.length > 0;
+								const variantDisplay = item?.product_variant_display;
+								const hasVariantDisplay = variantDisplay && typeof variantDisplay === 'object' && Object.keys(variantDisplay).length > 0;
+								return (
 								<Box
-									key={`item-${item.id}-${index}`}
+									key={`item-${item?.id ?? index}-${index}`}
 									flexDirection="row"
-									{...(index < order.order_items.length - 1 && { marginBottom: 'm', paddingBottom: 'm' })}
+									{...(index < orderItems.length - 1 && { marginBottom: 'm', paddingBottom: 'm' })}
 									style={
-										index < order.order_items.length - 1
+										index < orderItems.length - 1
 											? { borderBottomWidth: 1, borderBottomColor: '#F5F5F5' }
 											: { marginBottom: 0, paddingBottom: 0 }
 									}
@@ -266,9 +277,9 @@ export const OrderDetailScreen: React.FC = observer(() => {
 										justifyContent="center"
 										alignItems="center"
 									>
-										{item.product_image ? (
+										{hasValidImage ? (
 											<Image
-												source={{ uri: item.product_image }}
+												source={{ uri: imageUri }}
 												style={{ width: 80, height: 80 }}
 												resizeMode="cover"
 											/>
@@ -287,7 +298,7 @@ export const OrderDetailScreen: React.FC = observer(() => {
 											color="black"
 											marginBottom="xs"
 										>
-											{item.product_name || 'Product'}
+											{item?.product_name || 'Product'}
 										</Text>
 										<Text
 											fontSize={14}
@@ -295,16 +306,17 @@ export const OrderDetailScreen: React.FC = observer(() => {
 											color="gray"
 											marginBottom="xs"
 										>
-											Quantity: {item.quantity}
+											Quantity: {item?.quantity ?? 0}
 										</Text>
-										{item.product_variant_display && Object.keys(item.product_variant_display).length > 0 && (
+										{hasVariantDisplay && (
 											<Text fontSize={14} fontFamily={fonts.regular} color="gray">
-												{Object.entries(item.product_variant_display).map(([k, v]) => `${k}: ${v}`).join(', ')}
+												{Object.entries(variantDisplay).map(([k, v]) => `${k}: ${v}`).join(', ')}
 											</Text>
 										)}
 									</Box>
 								</Box>
-							))}
+							);
+							})}
 						</>
 					) : (
 						<Text fontSize={14} fontFamily={fonts.regular} color="gray">
@@ -364,7 +376,7 @@ export const OrderDetailScreen: React.FC = observer(() => {
 						Order Summary
 					</Text>
 					<Text fontSize={14} fontFamily={fonts.regular} color="gray">
-						{order.order_items?.length ?? 0} item(s)
+						{orderItems.length} item(s)
 					</Text>
 				</Box>
 			</ScrollView>

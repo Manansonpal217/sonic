@@ -78,7 +78,7 @@ export const AnimatedInput: React.FC<AnimatedInputProps> = ({
 
 	const borderColor = focusAnim.interpolate({
 		inputRange: [0, 1],
-		outputRange: hasError ? ['#ff6b6b', '#ff6b6b'] : ['#E5E3E0', palette.primary],
+		outputRange: hasError ? ['#e57373', '#e57373'] : ['#E0E0E0', palette.primary],
 	});
 
 	const labelTop = labelAnim.interpolate({
@@ -196,33 +196,30 @@ export const AnimatedInput: React.FC<AnimatedInputProps> = ({
 
 const styles = StyleSheet.create({
 	container: {
-		marginBottom: 20,
+		marginBottom: 16,
 		paddingHorizontal: 16,
 	},
 	inputContainer: {
-		borderRadius: 12,
-		backgroundColor: '#FFFFFF',
+		borderRadius: 10,
+		backgroundColor: '#FAFAFA',
 		position: 'relative',
 		shadowColor: '#000',
-		shadowOffset: {
-			width: 0,
-			height: 2,
-		},
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.04,
+		shadowRadius: 4,
 		elevation: 2,
 	},
 	label: {
 		position: 'absolute',
-		backgroundColor: '#FFFFFF',
-		paddingHorizontal: 8,
+		backgroundColor: '#FAFAFA',
+		paddingHorizontal: 6,
 		fontFamily: fonts.medium,
 		zIndex: 1,
 	},
 	input: {
-		fontSize: 15,
+		fontSize: 16,
 		fontFamily: fonts.regular,
-		color: '#000000',
+		color: '#1a1a1a',
 		paddingRight: 50,
 	},
 });

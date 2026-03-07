@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Animated, TouchableOpacity, StyleSheet, View, Dimensions, Linking, Pressable } from 'react-native';
+import { Animated, TouchableOpacity, StyleSheet, View, Dimensions, Linking } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Controller, useForm } from 'react-hook-form';
 import { Box, CommonHeader, Image, Screen, StatusBarType, Text, Pressable } from '../components';

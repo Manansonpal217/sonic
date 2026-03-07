@@ -5,7 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { Box, Text, Screen, CommonHeader, Pressable, StatusBarType, Image, Logo } from '../components';
 import { goBack, navigate, Route } from '../navigation/AppNavigation';
 import { showErrorMessage, getHttp } from '../core';
-import { PRODUCT_LEADS, BASE_URL, MEDIA_BASE_URL } from '../api/EndPoint';
+import { PRODUCT_LEADS, BASE_URL, getMediaUrl } from '../api/EndPoint';
 import { AnimatedInput } from '../components/auth/AnimatedInput';
 import { AnimatedButton } from '../components/auth/AnimatedButton';
 import { fonts } from '../style';
@@ -383,7 +383,7 @@ export const LeadFormScreen: React.FC<LeadFormScreenProps> = ({ route }) => {
 								>
 									{product.product_image ? (
 										<Image
-											source={{ uri: product.product_image.startsWith('http') ? product.product_image : `${MEDIA_BASE_URL}${product.product_image.startsWith('/') ? '' : '/'}${product.product_image}` }}
+											source={{ uri: getMediaUrl(product.product_image) ?? '' }}
 											style={{ width: 80, height: 80 }}
 											width={80}
 											height={80}

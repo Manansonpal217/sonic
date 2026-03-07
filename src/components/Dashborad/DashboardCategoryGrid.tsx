@@ -14,7 +14,7 @@ import { Pressable } from '../Pressable';
 import { Text } from '../Text';
 import { fonts } from '../../style';
 import { palette } from '../../style/Palette';
-import { MEDIA_BASE_URL } from '../../api/EndPoint';
+import { getMediaUrl } from '../../api/EndPoint';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PADDING = 16;
@@ -80,9 +80,7 @@ const CategoryCard: React.FC<{
 				{hasImage ? (
 					<Image
 						source={{
-							uri: category.category_image!.startsWith('http')
-								? category.category_image!
-								: `${MEDIA_BASE_URL}/${category.category_image!.replace(/^\//, '')}`,
+							uri: getMediaUrl(category.category_image!) ?? '',
 						}}
 						resizeMode="cover"
 						width="100%"

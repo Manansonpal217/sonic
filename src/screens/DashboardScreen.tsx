@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Box, Screen, StatusBarType, DrawerMenu, DashboardHeader, DashboardBanner, DashboardCategoryGrid, BannerItem, CategoryItem } from '../components';
 import { navigate, Route } from '../navigation/AppNavigation';
 import { getHttp } from '../core';
-import { BANNERS_ACTIVE, CATEGORIES_ACTIVE, MEDIA_BASE_URL } from '../api/EndPoint';
+import { BANNERS_ACTIVE, CATEGORIES_ACTIVE, getMediaUrl } from '../api/EndPoint';
 
 export const DashboardScreen: React.FC = () => {
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -22,7 +22,7 @@ export const DashboardScreen: React.FC = () => {
 				const result = await http.get<Array<{ id: number; banner_image?: string; banner_product_id?: number; banner_title?: string }>>(BANNERS_ACTIVE());
 				if (result?.isSuccess && result?.data) {
 					const items: BannerItem[] = (result.data as any[]).map((b) => ({
-						imageUrl: b.banner_image || '',
+						imageUrl: getMediaUrl(b.banner_image) || '',
 						bannerProductId: b.banner_product_id ? String(b.banner_product_id) : undefined,
 					})).filter((b) => b.imageUrl);
 					setBannerData(items);
@@ -55,11 +55,7 @@ export const DashboardScreen: React.FC = () => {
 	}, []);
 
 	const handleCategoryPress = (category: CategoryItem) => {
-		const categoryImageUrl = category.category_image
-			? (category.category_image.startsWith('http')
-					? category.category_image
-					: `${MEDIA_BASE_URL}/${category.category_image.replace(/^\//, '')}`)
-			: undefined;
+		const categoryImageUrl = getMediaUrl(category.category_image) ?? undefined;
 		navigate({
 			screenName: Route.ProductList,
 			params: {

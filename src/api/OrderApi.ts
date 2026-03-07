@@ -5,9 +5,10 @@ export interface OrderItem {
   id: number;
   product: number;
   product_name: string;
-  product_image?: string;
+  product_image?: string | null;
   quantity: number;
   price: string;
+  product_variant_display?: Record<string, string> | null;
 }
 
 export interface Order {
@@ -18,10 +19,10 @@ export interface Order {
   order_status: string;
   order_date: string;
   order_notes?: string;
-  order_items: OrderItem[];
-  items_count: number;
-  created_at: string;
-  updated_at: string;
+  order_items?: OrderItem[] | null;
+  items_count?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface OrderResponse {

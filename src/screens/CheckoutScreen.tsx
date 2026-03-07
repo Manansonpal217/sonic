@@ -13,7 +13,7 @@ import { showErrorMessage, showSuccessMessage } from '../core';
 import { Image } from '../components/Image';
 import { Logo } from '../components/Logo';
 import { Images } from '../assets';
-import { BASE_URL } from '../api/EndPoint';
+import { BASE_URL, getMediaUrl } from '../api/EndPoint';
 import { getHttp } from '../core/Http';
 
 export const CheckoutScreen = observer(() => {
@@ -198,8 +198,8 @@ export const CheckoutScreen = observer(() => {
 											>
 												{item.cart_product_image || item.product_image ? (
 													<Image
-														source={{ 
-															uri: item.cart_product_image || item.product_image || ''
+														source={{
+															uri: getMediaUrl(item.cart_product_image || item.product_image) ?? ''
 														}}
 														style={{ width: 60, height: 60 }}
 														resizeMode="cover"

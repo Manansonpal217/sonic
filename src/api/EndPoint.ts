@@ -33,6 +33,38 @@ export const ACCOUNT_DELETE_WEB_URL =
 	`${API_ORIGIN}/account-delete/`;
 /** Base URL for media assets. e.g. http://localhost:8000/media */
 export const MEDIA_BASE_URL = `${API_ORIGIN}/media`;
+
+/**
+ * Resolve media URL for images. Use for all category_image, product_image, banner_image.
+ * - Forces HTTPS in production (avoids ATS blocking http)
+ * - Handles full URLs, relative paths, and malformed double URLs from API
+ */
+export function getMediaUrl(path: string | null | undefined): string | null {
+	if (!path || typeof path !== 'string') return null;
+	const p = path.trim();
+	// Extract clean path from malformed URLs like /media/http://host/media/categories/x.jpg
+	const mediaPathMatch = p.match(/\/media\/[a-zA-Z0-9_]+\/[^?\s#]+\.(?:jpe?g|png|gif|webp)/i);
+	const pathPart = mediaPathMatch ? mediaPathMatch[0] : null;
+	if (pathPart) {
+		const base = API_ORIGIN.replace(/\/$/, '');
+		return `${base}${pathPart}`;
+	}
+	// Full URL: force HTTPS for production (non-localhost) so iOS ATS allows load
+	if (p.startsWith('http://') || p.startsWith('https://')) {
+		try {
+			const u = new URL(p);
+			const isLocal = u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname === '10.0.2.2';
+			return isLocal ? p : p.replace(/^http:\/\//, 'https://');
+		} catch {
+			return p;
+		}
+	}
+	// Relative path
+	if (p.startsWith('/media')) {
+		return `${API_ORIGIN.replace(/\/$/, '')}${p.startsWith('/') ? p : `/${p}`}`;
+	}
+	return `${MEDIA_BASE_URL.replace(/\/$/, '')}/${p.replace(/^\//, '')}`;
+}
 /** WebSocket base. e.g. ws://localhost:8000 */
 export const WS_BASE_URL = API_ORIGIN.replace(/^http/, 'ws');
 

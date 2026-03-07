@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { Box, Text, Image, Screen } from '../components';
 import { categoryApi, type Category } from '../api/CategoryApi';
-import { MEDIA_BASE_URL } from '../api/EndPoint';
+import { getMediaUrl } from '../api/EndPoint';
 import { useNavigation } from '@react-navigation/native';
 
 export const CategoriesScreen = () => {
@@ -34,11 +34,7 @@ export const CategoriesScreen = () => {
   };
 
   const handleCategoryPress = (category: Category) => {
-    const categoryImageUrl = category.category_image
-      ? (category.category_image.startsWith('http')
-          ? category.category_image
-          : `${MEDIA_BASE_URL}/${category.category_image.replace(/^\//, '')}`)
-      : undefined;
+    const categoryImageUrl = getMediaUrl(category.category_image) ?? undefined;
     navigation.navigate('Products' as never, {
       categoryId: category.id,
       categoryName: category.category_name,
@@ -70,9 +66,7 @@ export const CategoriesScreen = () => {
         {item.category_image ? (
           <Image
             source={{
-              uri: item.category_image.startsWith('http')
-                ? item.category_image
-                : `${MEDIA_BASE_URL}/${item.category_image.replace(/^\//, '')}`,
+              uri: getMediaUrl(item.category_image) ?? '',
             }}
             style={{ width: 80, height: 80, borderRadius: 8 }}
           />

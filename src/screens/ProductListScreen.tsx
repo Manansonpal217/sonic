@@ -9,7 +9,7 @@ import { getHttp } from '../core';
 import { Images } from '../assets';
 import { cartFactory } from '../factory/CartFactory';
 import { authStore } from '../stores/AuthStore';
-import { BASE_URL, MEDIA_BASE_URL } from '../api/EndPoint';
+import { BASE_URL, getMediaUrl } from '../api/EndPoint';
 
 const { width } = Dimensions.get('window');
 const itemWidth = (width - 48) / 2; // 2 columns with padding
@@ -20,6 +20,7 @@ interface Product {
 	product_description?: string;
 	product_image?: string;
 	product_price?: number;
+	product_weight?: string | number | null;
 	category?: number;
 }
 
@@ -38,9 +39,7 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 	const topPadding = insets.top + 8;
 	const categoryId = route?.params?.categoryId;
 	const categoryName = route?.params?.categoryName || 'Products';
-	const categoryImageFromParams = route?.params?.categoryImage;
 	
-	const [categoryImage, setCategoryImage] = useState<string | null>(categoryImageFromParams || null);
 	const [products, setProducts] = useState<Product[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isRefreshing, setIsRefreshing] = useState(false);
@@ -126,29 +125,6 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 			setCartProductIds(new Set());
 		}
 	}, []);
-
-	// Fetch category details when viewing by category (for header image)
-	useEffect(() => {
-		if (categoryId && !categoryImageFromParams) {
-			const fetchCategory = async () => {
-				try {
-					const http = getHttp();
-					const result = await http.get<any>(`${BASE_URL}/categories/${categoryId}/`);
-					if (result.isSuccess && result.data?.category_image) {
-						const img = result.data.category_image;
-						setCategoryImage(img.startsWith('http') ? img : `${MEDIA_BASE_URL}/${img.replace(/^\//, '')}`);
-					}
-				} catch {
-					// Ignore - header will show without image
-				}
-			};
-			fetchCategory();
-		} else if (categoryImageFromParams) {
-			setCategoryImage(categoryImageFromParams);
-		} else {
-			setCategoryImage(null);
-		}
-	}, [categoryId, categoryImageFromParams]);
 
 	useEffect(() => {
 		loadProducts();
@@ -356,7 +332,7 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 						>
 							{item.product_image ? (
 								<Image
-									source={{ uri: item.product_image }}
+									source={{ uri: getMediaUrl(item.product_image) ?? '' }}
 									style={{ width: '100%', height: '100%' }}
 									resizeMode="cover"
 								/>
@@ -374,7 +350,7 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 					<Box padding="m" paddingBottom="s">
 						{/* Product Name - Elegant Typography with Better Spacing */}
 						<Box 
-							marginBottom="m"
+							marginBottom="xs"
 							paddingBottom="xs"
 							style={{
 								borderBottomWidth: 1,
@@ -393,6 +369,16 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 							>
 								{item.product_name || 'Product'}
 							</Text>
+							{item.product_weight != null && item.product_weight !== '' && (
+								<Text
+									fontSize={12}
+									fontFamily={fonts.regular}
+									color="gray"
+									marginTop="xs"
+								>
+									Weight: {String(item.product_weight)}
+								</Text>
+							)}
 						</Box>
 
 						{/* Quantity Controls */}
@@ -526,22 +512,6 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = observer(({ r
 							<Text fontSize={26} color="white" style={{ lineHeight: 30, textAlign: 'center', includeFontPadding: false }}>←</Text>
 						</Box>
 					</Pressable>
-					{categoryImage && categoryId ? (
-						<Box
-							width={48}
-							height={48}
-							borderRadius={4}
-							overflow="hidden"
-							marginEnd="m"
-							style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
-						>
-							<Image
-								source={{ uri: categoryImage }}
-								style={{ width: 48, height: 48 }}
-								resizeMode="cover"
-							/>
-						</Box>
-					) : null}
 					<Text
 						fontSize={24}
 						fontFamily={fonts.bold}
